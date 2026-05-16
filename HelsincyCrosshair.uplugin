@@ -1,0 +1,30 @@
+﻿{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "Helsincy Crosshair System",
+	"Description": "High-performance dynamic crosshair plugin for FPS games. Features Canvas-based rendering, 10 built-in crosshair shapes, hit markers, damage indicators, data-driven profiles, recoil/spread simulation, target detection with color feedback, and full Blueprint support. Non-intrusive integration via Bridge API or legacy HUD.",
+	"Category": "Gameplay",
+	"CreatedBy": "Helsincy Games",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "4.27.0",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "HelsincyCrosshair",
+			"Type": "Runtime",
+			"LoadingPhase": "PreLoadingScreen"
+		},
+		{
+			"Name": "HelsincyDamageIndicator",
+			"Type": "Runtime",
+			"LoadingPhase": "PreLoadingScreen"
+		}
+	]
+}
