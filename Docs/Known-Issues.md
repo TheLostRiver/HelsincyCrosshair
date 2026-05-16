@@ -116,7 +116,7 @@ Blueprint renderer 更适合快速试验、RadialCircle 样式或不严格依赖
 
 ### 3. README 与历史设计文档中的“10 种准心”说法曾不完全对应当前实现
 
-**已修复** — 10 个内置准心渲染器已全部实现并注册（含 DotOnly），README 已同步更新。旧版 ACS 设计文档已归档到 `Docs/Archive/DesignDocument_Legacy_ACS.md`，不再作为当前项目标准。
+**已修复** — 10 个内置准心渲染器已全部实现并注册（含 DotOnly），README 已同步更新。旧版 ACS 设计文档不再作为当前项目标准。
 
 ### 4. 运行时预设系统曾仅在内存中生效
 

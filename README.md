@@ -2,28 +2,31 @@
 
 **语言 / Language**: 简体中文 | [English](README_EN.md)
 
-`HelsincyCrosshair` 是面向 Unreal Engine 射击项目的运行时动态准心与伤害方向提示插件。插件采用 `Canvas` / `FCanvas` 绘制路径，核心目标是在不依赖 UMG 主路径的前提下，提供低延迟、数据驱动、可扩展、便于蓝图和 C++ 集成的 HUD 表现系统。
+**`HelsincyCrosshair` 是一套面向 Unreal Engine 射击项目的高完成度动态准心与独立伤害方向指示器 HUD 插件。**
+
+它不是一个只负责在屏幕中心画十字线的示例工程，而是一套可以直接进入真实 FPS / TPS 项目的运行时 HUD 表现系统：基于 `Canvas` / `FCanvas` 的低延迟绘制路径，内置 10 种准心渲染器、3 种伤害方向指示器样式、COD 风格命中反馈、动态扩散、后坐力恢复、目标识别变色、DataAsset 预设与 `USaveGame` 持久化。
+
+当前核心 Profile 结构中已经包含 **170+ 个可编辑配置字段**，覆盖准心视觉、动态扩散、形状参数、中心点、命中反馈、受击方向、窗口边缘放置、弧形受击提示、图片样式、颜色映射和运行时预设。它适合想要“开箱即用”，也适合想要深度调参、扩展渲染器、按武器/角色/状态切换 HUD 表现的项目。
 
 当前实现由两个 Runtime 模块组成：
 
 - `HelsincyCrosshair`：准心、中心点、动态扩散、后坐力扩散恢复、命中反馈、目标识别变色。
 - `HelsincyDamageIndicator`：受击方向提示、窗口边缘/圆形放置模式、Arrow/Image/Arc 指示器渲染。
 
-如果你想先了解插件采用的整体架构、为什么这样设计，以及它如何做到易扩展、易集成和高性能，请直接阅读 [项目架构文档](Docs/Architecture.md)。
+如果你想先看完整能力清单，请阅读 [功能总览](Docs/Feature-Overview_CN.md)。如果你想了解插件采用的整体架构、为什么这样设计，以及它如何做到易扩展、易集成和高性能，请阅读 [项目架构文档](Docs/Architecture.md)。
 
 如果你想直接开始使用，请阅读 [中文用户手册](Docs/UserManual_CN.md)；需要按工程步骤接入时，请阅读 [集成指南](Docs/Integration-Guide.md)。
 
-## 当前能力
+## 核心亮点
 
-- 10 个已注册的内置准心渲染器：Cross、Circle、TStyle、Triangle、Rectangle、Chevron、Polygon、Wings、Image、DotOnly。
-- 命中反馈支持多样式绘制，并包含 COD 风格的扭转、缩放和伤害强度响应。
-- 3 个已注册的内置伤害方向指示器样式：Arrow、Image、Arc。
-- 伤害方向指示器支持 `RadialCircle` 和 `WindowEdge` 两种放置模式；`WindowEdge` 基于当前游戏 Canvas / 窗口边缘，而不是物理显示器边缘。
-- 基于 GameplayTag 的准心形状、伤害指示器样式和扩展渲染器选择。
-- 基于 DataAsset 的默认配置加载，以及运行时内存预设保存/读取。
-- 内建 `USaveGame` 磁盘持久化，预设可跨关卡/重启保留，支持自动保存/加载。
-- 支持 Legacy HUD 和 Bridge API 两种集成方式。
-- 支持 UE4 `STAT` 性能统计，可用 `stat HelsincyCrosshair` / `stat HelsincyDamageIndicator` 查看插件热路径开销。
+- **市场级准星系统，而不是演示级准星**：10 个已注册内置准心渲染器，覆盖 Cross、Circle、TStyle、Triangle、Rectangle、Chevron、Polygon、Wings、Image、DotOnly，可用于竞技 FPS、TPS、技能射击、腰射、交互提示和特殊武器 HUD。
+- **170+ 可编辑配置字段**：核心 Profile 参数全部数据驱动，覆盖颜色、描边、透明度、全局偏移、动态扩散、后坐力恢复、不同形状参数、中心点、目标识别、交互物变色、命中反馈动画和伤害指示器样式。
+- **独立伤害方向指示器模块**：`HelsincyDamageIndicator` 已拆分为独立 Runtime 模块，内置 Arrow、Image、Arc 三种样式，并支持 `RadialCircle` 与 `WindowEdge` 两种放置模式。
+- **COD 风格命中反馈**：支持普通命中、爆头、击杀、单实例刷新、多实例叠加、扭转、缩放、针状线条、法线震动、伤害强度响应和基础准星可见性策略。
+- **真实项目友好的集成路径**：既可以直接使用 `AHelsincyHUD` / `BP_HelsincySuperHUD`，也可以通过 Bridge API 接入任何已有 HUD，不要求修改项目 HUD 继承链。
+- **运行时可调、可保存、可恢复**：DataAsset 负责默认配置，组件负责运行时 Profile，内建 `USaveGame` 预设持久化，支持跨关卡/重启保留。
+- **GameplayTag 驱动扩展**：准星形状、伤害指示器样式和自定义 Renderer 都通过 GameplayTag 选择，蓝图和 C++ 都可以扩展。
+- **面向性能敏感 HUD 路径**：不依赖 UMG 主路径，采用 `Canvas` / `FCanvas` 绘制，并提供 `stat HelsincyCrosshair` / `stat HelsincyDamageIndicator` 性能统计入口。
 
 ## 集成方式
 
@@ -121,7 +124,7 @@ HelsincyCrosshair/
 
 | 文档 | 路径 | 适合谁看 | 说明 |
 |------|------|----------|------|
-| 项目文档规划 | [Docs/Documentation-Plan.md](Docs/Documentation-Plan.md) | 项目负责人、维护者 | 文档体系设计方案、覆盖范围、维护建议 |
+| 功能总览 | [Docs/Feature-Overview_CN.md](Docs/Feature-Overview_CN.md) | 所有用户、技术美术、策划、程序 | 插件能力、参数规模、准心/伤害指示器功能亮点 |
 | 项目架构文档 | [Docs/Architecture.md](Docs/Architecture.md) | 程序、技术策划 | 模块边界、类职责、数据流、渲染链路 |
 | 使用与集成指南 | [Docs/Integration-Guide.md](Docs/Integration-Guide.md) | 游戏逻辑程序、蓝图开发者 | 从启用插件到角色接入的完整步骤 |
 | 配置参考手册 | [Docs/Configuration-Reference.md](Docs/Configuration-Reference.md) | 调参与系统集成人员 | Profile 结构体与配置项说明 |
@@ -137,4 +140,3 @@ HelsincyCrosshair/
 - `HelsincyDamageIndicator` 已从准心模块中拆出为独立 Runtime 模块；需要伤害方向提示时必须添加 `UHelsincyDamageIndicatorComponent`。
 - 默认人物类是否挂载伤害指示器组件取决于项目侧配置；插件不会强行给所有 Pawn 注入该组件。
 - `WindowEdge` 使用当前游戏 Canvas / 窗口边界计算位置，适配窗口化运行；它不是桌面显示器边界定位。
-- [Docs/Archive/DesignDocument_Legacy_ACS.md](Docs/Archive/DesignDocument_Legacy_ACS.md) 是已归档的旧版 ACS 设计文档，仅适合做历史对照，不应作为当前项目标准。
