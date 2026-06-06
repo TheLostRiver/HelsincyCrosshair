@@ -125,6 +125,8 @@ HelsincyCrosshair/
 | 文档 | 路径 | 适合谁看 | 说明 |
 |------|------|----------|------|
 | 功能总览 | [Docs/Feature-Overview_CN.md](Docs/Feature-Overview_CN.md) | 所有用户、技术美术、策划、程序 | 插件能力、参数规模、准心/伤害指示器功能亮点 |
+| 更新日志 | [CHANGELOG.md](CHANGELOG.md) | 所有用户、维护者 | 维护修复、验证记录和版本历史 |
+| v4.0.1 发布说明 | [Docs/Release-Notes-v4.0.1.md](Docs/Release-Notes-v4.0.1.md) | 所有用户 | v4.0.0 之后的维护修复、验证记录和发布包说明 |
 | v4.0.0 发布说明 | [Docs/Release-Notes-v4.0.0.md](Docs/Release-Notes-v4.0.0.md) | 所有用户 | 首次公开 Release 的版本定位、核心能力和包内容说明 |
 | 发布打包说明 | [Docs/Release-Packaging.md](Docs/Release-Packaging.md) | 维护者、发布负责人 | 中英双语发布包内容、排除规则和打包命令 |
 | 项目架构文档 | [Docs/Architecture.md](Docs/Architecture.md) | 程序、技术策划 | 模块边界、类职责、数据流、渲染链路 |
@@ -139,7 +141,8 @@ HelsincyCrosshair/
 ## 当前版本注意事项
 
 - 这份 README 以当前仓库源码和插件 Content 资源为准，不沿用早期设计文档中的理想状态。
-- 当前首次公开发布版本按 `v4.0.0` 标记；这是成熟版首发口径，不代表此前存在公开 v1/v2/v3 Release。
+- 当前发布版本为 `v4.0.1`；`v4.0.0` 是首次公开 Release，成熟版首发口径不代表此前存在公开 v1/v2/v3 Release。
+- `v4.0.1` 已经加固异步目标检测、本地玩家守卫重新激活，以及公共模块依赖暴露；详见 [CHANGELOG.md](CHANGELOG.md)。
 - `HelsincyDamageIndicator` 已从准心模块中拆出为独立 Runtime 模块；需要伤害方向提示时必须添加 `UHelsincyDamageIndicatorComponent`。
 - 默认人物类是否挂载伤害指示器组件取决于项目侧配置；插件不会强行给所有 Pawn 注入该组件。
 - `WindowEdge` 使用当前游戏 Canvas / 窗口边界计算位置，适配窗口化运行；它不是桌面显示器边界定位。

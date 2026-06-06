@@ -16,6 +16,7 @@
 2. 本地角色由 Pawn 或 Character 驱动。
 3. 游戏存在一个可配置 HUD Class 的 GameMode（方式 A），或你已有自定义 HUD 且能在 DrawHUD 中添加一到两行 Bridge 调用（方式 B）。
 4. 需要目标识别时，目标对象能够实现阵营接口或交互接口。
+5. 如果通过 C++ 包含插件公共头，请在宿主模块 `Build.cs` 中依实际使用添加 `HelsincyCrosshair` 和 / 或 `HelsincyDamageIndicator` 依赖。插件自身已经公开导出公共头所需的 Unreal 依赖，宿主模块不需要为了插件公共头额外补间接依赖。
 
 ## 3. 双模块概览
 
@@ -100,7 +101,7 @@ void AMyGameHUD::DrawHUD()
 
 组件内部只对本地真人玩家控制的 Pawn 完整激活，不需要在所有远端角色或 AI 上运行 HUD 表现逻辑。系统天然偏向本地 HUD 表现层。
 
-当前版本中，`UHelsincyCrosshairComponent` 和 `UHelsincyDamageIndicatorComponent` 都包含本地玩家守卫。Controller 尚未就位时组件会保持轻量 Pending 状态并低频重试；一旦确认 `APlayerController + IsLocalController()`，本地真人玩家会完成初始化并显示 HUD。AI Controller、远端玩家和模拟代理会被禁用，避免多人或 AI 场景下错误显示本地 HUD。
+当前版本中，`UHelsincyCrosshairComponent` 和 `UHelsincyDamageIndicatorComponent` 都包含本地玩家守卫。Controller 尚未就位时组件会保持轻量 Pending 状态并低频重试；一旦确认 `APlayerController + IsLocalController()`，本地真人玩家会完成初始化并显示 HUD。AI Controller、远端玩家和模拟代理会被禁用，避免多人或 AI 场景下错误显示本地 HUD。如果 Pawn 在运行时经历本地 -> 非本地/AI -> 本地的归属切换，组件会重新激活，同时保留已经完成的一次性默认资产 / 预设初始化状态。
 
 ## 5. 选择准心形状（ShapeTag）
 
@@ -291,7 +292,24 @@ DamageIndicatorComponent->RegisterDamageEvent(DamageCauserActor, HitLocation);
 
 ## 10. C++ 集成示例
 
-### 10.1 开火 + 命中
+### 10.1 Build.cs 依赖
+
+如果宿主项目通过 C++ 直接包含插件公共头，在宿主模块的 `.Build.cs` 中添加实际使用到的插件模块：
+
+```csharp
+PublicDependencyModuleNames.AddRange(new string[]
+{
+    "Core",
+    "CoreUObject",
+    "Engine",
+    "HelsincyCrosshair",
+    "HelsincyDamageIndicator"
+});
+```
+
+只使用准星时可以只添加 `HelsincyCrosshair`；只使用伤害方向指示器时可以只添加 `HelsincyDamageIndicator`。插件模块已经在自己的公共依赖中导出 `GameplayTags`、`DeveloperSettings`、`AIModule` 等公共头所需的 Unreal 模块。
+
+### 10.2 开火 + 命中
 
 ```cpp
 // 仅在本地控制 Pawn 上调用有意义
@@ -307,7 +325,7 @@ if (UHelsincyCrosshairComponent* Crosshair = FindComponentByClass<UHelsincyCross
 }
 ```
 
-### 10.2 切换准心资产
+### 10.3 切换准心资产
 
 ```cpp
 if (UHelsincyCrosshairComponent* Crosshair = FindComponentByClass<UHelsincyCrosshairComponent>())
@@ -316,7 +334,7 @@ if (UHelsincyCrosshairComponent* Crosshair = FindComponentByClass<UHelsincyCross
 }
 ```
 
-### 10.3 伤害指示器
+### 10.4 伤害指示器
 
 ```cpp
 if (UHelsincyDamageIndicatorComponent* DI = FindComponentByClass<UHelsincyDamageIndicatorComponent>())
@@ -325,7 +343,7 @@ if (UHelsincyDamageIndicatorComponent* DI = FindComponentByClass<UHelsincyDamage
 }
 ```
 
-### 10.4 Bridge 集成（在已有 HUD 中）
+### 10.5 Bridge 集成（在已有 HUD 中）
 
 ```cpp
 #include "Library/HelsincyCrosshairRenderLibrary.h"
@@ -339,7 +357,7 @@ void AMyProjectHUD::DrawHUD()
 }
 ```
 
-### 10.5 运行时切换
+### 10.6 运行时切换
 
 ```cpp
 if (UHelsincyCrosshairComponent* Crosshair = FindComponentByClass<UHelsincyCrosshairComponent>())

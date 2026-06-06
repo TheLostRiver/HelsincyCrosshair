@@ -1,13 +1,14 @@
 # HelsincyCrosshair Plugin — API Reference / API 参考手册
 
-> **Version / 版本**: 1.0  
-> **Engine / 引擎**: UE 4.27  
+> **Version / 版本**: v4.0.1
+> **Engine / 引擎**: UE 4.27
 > **Modules / 模块**: `HelsincyCrosshair`, `HelsincyDamageIndicator`
 
 ---
 
 ## Table of Contents / 目录
 
+0. [C++ Module Dependencies / C++ 模块依赖](#c-module-dependencies--c-模块依赖)
 1. [Module: HelsincyCrosshair / 准星模块](#1-module-helsincycrosshair--准星模块)
    - 1.1 [UHelsincyCrosshairComponent](#11-uhelsincycrosshaircomponent)
    - 1.2 [UHelsincyCrosshairRenderLibrary (Bridge API)](#12-uhelsincycrosshairrenderlibrary-bridge-api)
@@ -43,6 +44,22 @@
 6. [Performance Stats / 性能统计](#6-performance-stats--性能统计)
 
 ---
+
+## C++ Module Dependencies / C++ 模块依赖
+
+External C++ modules that include plugin public headers should depend on the plugin module they use:
+
+```csharp
+PublicDependencyModuleNames.AddRange(new string[]
+{
+    "HelsincyCrosshair",
+    "HelsincyDamageIndicator"
+});
+```
+
+Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamageIndicator` when consuming damage indicator APIs, or both when using both systems. The plugin modules publicly export the Unreal dependencies required by their public API, including `CoreUObject`, `Engine`, `GameplayTags`, `DeveloperSettings`, and `AIModule` where applicable.
+
+外部 C++ 模块包含插件公共头时，应在宿主模块 `Build.cs` 中添加实际使用的插件模块：只用准星就添加 `HelsincyCrosshair`，只用伤害指示器就添加 `HelsincyDamageIndicator`，两套都用则都添加。插件模块已经公开导出公共 API 所需的 Unreal 依赖，包括 `CoreUObject`、`Engine`、`GameplayTags`、`DeveloperSettings`，以及准星目标检测相关的 `AIModule`。
 
 ## 1. Module: HelsincyCrosshair / 准星模块
 

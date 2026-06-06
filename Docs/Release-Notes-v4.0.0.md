@@ -1,5 +1,8 @@
 # HelsincyCrosshair v4.0.0 Release Notes / 发布说明
 
+> v4.0.0 之后的维护修复和验证记录见仓库根目录 [CHANGELOG.md](../CHANGELOG.md)。
+> Post-release maintenance fixes and verification notes are tracked in the repository root [CHANGELOG.md](../CHANGELOG.md).
+
 ## 中文
 
 **v4.0.0** 是 `HelsincyCrosshair` 的首次公开 Release，也是当前架构成熟后的首个正式版本。虽然此前没有公开发布版本，但项目已经经历多轮迭代和几次大规模重构：伤害方向指示器被拆分为独立 Runtime 模块，准心系统完成 10 个内置渲染器覆盖，命中反馈、数据驱动 Profile、持久化和 Bridge API 都已经形成稳定使用路径。
