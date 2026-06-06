@@ -2,7 +2,7 @@
 
 ## 中文
 
-当前首次公开发布版本定为 **v4.0.0**。虽然这是项目第一次正式发布 Release，但插件已经经历多轮迭代和大规模重构，当前能力已经覆盖动态准心、独立伤害方向指示器、命中反馈、数据驱动 Profile、预设持久化、Bridge API 和扩展渲染器体系，因此使用 v4.0.0 作为成熟版首发版本。
+当前发布版本定为 **v4.0.1**。**v4.0.0** 仍是项目第一次正式公开 Release；v4.0.1 是其后的维护版本，聚焦异步目标检测、本地玩家守卫重新激活和公共模块依赖暴露。
 
 ### 发布包必须包含
 
@@ -15,6 +15,8 @@
 - `Image/`
 - `README.md`
 - `README_EN.md`
+- `CHANGELOG.md`
+- `Docs/Release-Notes-v4.0.1.md`
 
 ### 发布包必须排除
 
@@ -40,20 +42,20 @@
 在插件根目录执行：
 
 ```powershell
-.\Scripts\Package-Release.ps1 -Version 4.0.0
+.\Scripts\Package-Release.ps1 -Version 4.0.1
 ```
 
 脚本会生成：
 
 ```text
-Dist/HelsincyCrosshair-v4.0.0.zip
+Dist/HelsincyCrosshair-v4.0.1.zip
 ```
 
-脚本会在压缩前检查 `Content/` 和 `Docs/` 是否存在，并阻止过程文件与 Unreal 缓存目录进入发布包。
+脚本会在压缩前检查必要的顶层目录、README、CHANGELOG 和对应版本发布说明是否存在，并阻止过程文件与 Unreal 缓存目录进入发布包。
 
 ## English
 
-The first public release is versioned as **v4.0.0**. Although this is the first formal GitHub Release, the plugin has already gone through multiple iterations and large-scale refactors. The current feature set covers dynamic crosshairs, a standalone damage direction indicator module, hit feedback, data-driven Profiles, preset persistence, Bridge API integration, and renderer extension, so v4.0.0 is used as a mature initial release.
+The current release is versioned as **v4.0.1**. **v4.0.0** remains the first formal public release; v4.0.1 is a maintenance release focused on async target detection, local-player guard reactivation, and public module dependency exposure.
 
 ### Release Package Must Include
 
@@ -66,6 +68,8 @@ The first public release is versioned as **v4.0.0**. Although this is the first 
 - `Image/`
 - `README.md`
 - `README_EN.md`
+- `CHANGELOG.md`
+- `Docs/Release-Notes-v4.0.1.md`
 
 ### Release Package Must Exclude
 
@@ -91,13 +95,13 @@ The first public release is versioned as **v4.0.0**. Although this is the first 
 Run this from the plugin root:
 
 ```powershell
-.\Scripts\Package-Release.ps1 -Version 4.0.0
+.\Scripts\Package-Release.ps1 -Version 4.0.1
 ```
 
 The script creates:
 
 ```text
-Dist/HelsincyCrosshair-v4.0.0.zip
+Dist/HelsincyCrosshair-v4.0.1.zip
 ```
 
-Before compressing the package, the script verifies that `Content/` and `Docs/` are present and blocks process notes or Unreal cache directories from entering the release archive.
+Before compressing the package, the script verifies required top-level directories, README files, CHANGELOG, and the matching version release notes, then blocks process notes or Unreal cache directories from entering the release archive.

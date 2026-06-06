@@ -1,13 +1,22 @@
 param(
-    [string]$Version = "4.0.0",
+    [string]$Version = "4.0.1",
     [string]$OutputDir = "Dist"
 )
 
 $ErrorActionPreference = "Stop"
 
-$Root = Resolve-Path (Join-Path $PSScriptRoot "..")
+$Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $PackageName = "HelsincyCrosshair-v$Version"
 $StageRoot = Join-Path $Root $OutputDir
+$RootFull = [System.IO.Path]::GetFullPath($Root)
+$StageRootFull = [System.IO.Path]::GetFullPath($StageRoot)
+$RootPrefix = $RootFull.TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
+
+if (-not (($StageRootFull + [System.IO.Path]::DirectorySeparatorChar).StartsWith($RootPrefix, [System.StringComparison]::OrdinalIgnoreCase))) {
+    throw "OutputDir must resolve inside the plugin root."
+}
+
+$StageRoot = $StageRootFull
 $StageDir = Join-Path $StageRoot $PackageName
 $ZipPath = Join-Path $StageRoot "$PackageName.zip"
 
@@ -33,6 +42,20 @@ $ExcludedFileNames = @(
     "findings.md"
 )
 
+$RequiredPackagePaths = @(
+    "HelsincyCrosshair.uplugin",
+    "Source",
+    "Content",
+    "Config",
+    "Docs",
+    "Resources",
+    "Image",
+    "README.md",
+    "README_EN.md",
+    "CHANGELOG.md",
+    (Join-Path "Docs" "Release-Notes-v$Version.md")
+)
+
 if (Test-Path $StageDir) {
     Remove-Item -LiteralPath $StageDir -Recurse -Force
 }
@@ -52,12 +75,10 @@ Get-ChildItem -LiteralPath $Root -Force | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination $Destination -Recurse -Force
 }
 
-if (-not (Test-Path (Join-Path $StageDir "Content"))) {
-    throw "Package validation failed: Content directory is missing."
-}
-
-if (-not (Test-Path (Join-Path $StageDir "Docs"))) {
-    throw "Package validation failed: Docs directory is missing."
+foreach ($RequiredPath in $RequiredPackagePaths) {
+    if (-not (Test-Path (Join-Path $StageDir $RequiredPath))) {
+        throw "Package validation failed: required path '$RequiredPath' is missing."
+    }
 }
 
 foreach ($ForbiddenFile in $ExcludedFileNames) {

@@ -137,6 +137,7 @@ These tools make the plugin practical not only for visual tuning, but also for i
 
 ## Next Reading
 
+- [Changelog](../CHANGELOG.md): maintenance fixes and verification notes.
 - [English user manual](UserManual_EN.md): full Blueprint/C++ usage from setup to advanced extension.
 - [Integration guide](Integration-Guide.md): project-level setup steps.
 - [Configuration reference](Configuration-Reference.md): field-level parameter notes.

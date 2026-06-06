@@ -125,6 +125,8 @@ Damage indicator placement modes include:
 | Document | Path | Audience | Notes |
 |----------|------|----------|-------|
 | Feature overview | [Docs/Feature-Overview_EN.md](Docs/Feature-Overview_EN.md) | All users, technical artists, designers, programmers | Capability overview, configuration scale, crosshair and damage indicator highlights |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) | All users, maintainers | Maintenance fixes, verification notes, and version history |
+| v4.0.1 release notes | [Docs/Release-Notes-v4.0.1.md](Docs/Release-Notes-v4.0.1.md) | All users | Maintenance fixes, verification notes, and release package details after v4.0.0 |
 | v4.0.0 release notes | [Docs/Release-Notes-v4.0.0.md](Docs/Release-Notes-v4.0.0.md) | All users | First public Release positioning, core capabilities, and package contents |
 | Release packaging | [Docs/Release-Packaging.md](Docs/Release-Packaging.md) | Maintainers, release owners | Bilingual release package contents, exclusion rules, and packaging command |
 | Architecture | [Docs/Architecture.md](Docs/Architecture.md) | Programmers, technical designers | Module boundaries, class responsibilities, data flow, and rendering path |
@@ -139,7 +141,8 @@ Damage indicator placement modes include:
 ## Current Version Notes
 
 - This README is based on the current source code and plugin Content assets, not on early design-document assumptions.
-- The first public release is versioned as `v4.0.0`; this is a mature initial release label and does not imply that public v1/v2/v3 releases existed.
+- The current release is `v4.0.1`; `v4.0.0` remains the first public release and does not imply that public v1/v2/v3 releases existed.
+- `v4.0.1` hardens async target detection, local-player guard reactivation, and public module dependency exposure. See [CHANGELOG.md](CHANGELOG.md) for details.
 - `HelsincyDamageIndicator` has been split out of the crosshair module into an independent Runtime module. To show damage direction indicators, you must add `UHelsincyDamageIndicatorComponent`.
 - Whether the default character class has the damage indicator component depends on project-side configuration. The plugin does not force-inject the component into every Pawn.
 - `WindowEdge` uses the current game Canvas / window bounds and supports windowed mode. It is not based on the desktop monitor edge.

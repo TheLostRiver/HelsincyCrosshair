@@ -125,3 +125,15 @@ Blueprint renderer 更适合快速试验、RadialCircle 样式或不严格依赖
 ### 5. DamageIndicatorComponent 曾缺少本地真人玩家守卫
 
 **已修复** — `UHelsincyCrosshairComponent` 和 `UHelsincyDamageIndicatorComponent` 均已实现本地玩家守卫。Controller 延迟就位时不会再永久失活，而是保持 Pending 并低频重试；最终通过 `Cast<APlayerController>` + `IsLocalController()` 精确判定本地真人玩家，排除 AI Controller、远端玩家和模拟代理。
+
+### 6. 异步目标检测曾可能被过期回调覆盖新状态
+
+**已修复** — `UHelsincyCrosshairComponent::OnTraceCompleted` 现在会校验回调的 `FTraceHandle` 是否仍是当前活动请求。超过等待帧数后被放弃的旧 trace 即使稍后回调，也不会再执行 `ProcessHitResult()` 或 `ClearTarget()`，因此不会把当前目标高亮回滚到旧命中结果。
+
+### 7. 本地 / 非本地 / 再本地切换曾可能无法重新激活组件
+
+**已修复** — 准星组件和伤害指示器组件都已拆分本地玩家激活与非本地停用路径。组件在进入 AI、远端玩家、无 Controller 或非本地拥有者状态时会清理 owner eligibility 状态；当同一 Pawn 后续重新变成本地真人玩家时，可以重新激活组件，同时保留一次性初始化完成状态，避免不必要地重复加载默认资产或预设。
+
+### 8. Public 头文件依赖曾被放在 Private Build.cs 依赖中
+
+**已修复** — 两个 Runtime 模块的 `Build.cs` 已将公共 API 实际暴露的 Unreal 模块移入 `PublicDependencyModuleNames`。外部 C++ 模块包含公共头时，不再需要依赖宿主项目碰巧补齐 `GameplayTags`、`DeveloperSettings`、`AIModule` 等间接依赖。

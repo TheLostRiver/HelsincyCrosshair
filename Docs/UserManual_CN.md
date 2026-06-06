@@ -1,6 +1,6 @@
 # HelsincyCrosshair 插件用户手册
 
-> **版本**: 1.0  
+> **版本**: v4.0.1
 > **引擎**: Unreal Engine 4.27  
 > **作者**: Helsincy Games  
 > **适用对象**: 蓝图用户 / C++ 用户 / 策划
