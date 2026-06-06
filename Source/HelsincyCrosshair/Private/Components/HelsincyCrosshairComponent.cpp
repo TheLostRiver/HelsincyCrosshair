@@ -126,9 +126,7 @@ void UHelsincyCrosshairComponent::BeginPlay()
 	APawn* Pawn = Cast<APawn>(GetOwner());
 	if (!Pawn)
 	{
-		ResetCrosshairPresentationState();
-		SetComponentTickEnabled(false);
-		Deactivate();
+		DeactivateForNonLocalOwner();
 		return;
 	}
 
@@ -141,20 +139,12 @@ void UHelsincyCrosshairComponent::BeginPlay()
 	{
 		if (ShouldActivateForOwner())
 		{
-			bOwnerCheckPassed = true;
-			SetComponentTickEnabled(true);
-			if (!IsActive()) Activate();
-			PerformFullInitialization();
-			bLocalPlayerInitializationComplete = true;
+			ActivateForLocalPlayerOwner();
 		}
 		else
 		{
 			// 非本地真人玩家, 禁用正常 HUD 逻辑 | Not a local human player, disable normal HUD logic
-			OwningPawn = nullptr;
-			OwnerCharacter = nullptr;
-			ResetCrosshairPresentationState();
-			SetComponentTickEnabled(false);
-			Deactivate();
+			DeactivateForNonLocalOwner();
 		}
 	}
 	else
@@ -1009,6 +999,7 @@ void UHelsincyCrosshairComponent::RefreshTickState()
 				PendingCheckFrameCount = 0;
 			}
 			bPendingOwnerCheck = true;
+			bOwnerCheckPassed = false;
 			ResetCrosshairPresentationState();
 			ScheduleLocalPlayerGuardRetry();
 			return;
@@ -1019,26 +1010,13 @@ void UHelsincyCrosshairComponent::RefreshTickState()
 		PendingCheckFrameCount = 0;
 		bLocalPlayerGuardTimeoutLogged = false;
 
-		bool bShouldTick = ShouldActivateForOwner();
-		SetComponentTickEnabled(bShouldTick);
-		
-		if (bShouldTick && !IsActive())
+		if (ShouldActivateForOwner())
 		{
-			Activate(); // 重新激活 | Reactivate
-		}
-		else if (!bShouldTick && IsActive())
-		{
-			Deactivate(); // 休眠 | Deactivate
-		}
-		if (bShouldTick)
-		{
-			bOwnerCheckPassed = true;
+			ActivateForLocalPlayerOwner();
 		}
 		else
 		{
-			OwningPawn = nullptr;
-			OwnerCharacter = nullptr;
-			ResetCrosshairPresentationState();
+			DeactivateForNonLocalOwner();
 		}
 
 		RefreshCurrentPrimaryColor();
@@ -1046,7 +1024,7 @@ void UHelsincyCrosshairComponent::RefreshTickState()
 	}
 	else
 	{
-		ResetCrosshairPresentationState();
+		DeactivateForNonLocalOwner();
 	}
 }
 
@@ -1060,6 +1038,32 @@ void UHelsincyCrosshairComponent::Debug_SetPendingLocalPlayerGuardForAutomation(
 void UHelsincyCrosshairComponent::Debug_TickPendingLocalPlayerGuardForAutomation()
 {
 	TickPendingLocalPlayerGuard();
+}
+
+void UHelsincyCrosshairComponent::Debug_ActivateForLocalPlayerGuardForAutomation()
+{
+	ActivateForLocalPlayerOwner();
+}
+
+void UHelsincyCrosshairComponent::Debug_DeactivateForLocalPlayerGuardForAutomation()
+{
+	DeactivateForNonLocalOwner();
+}
+
+void UHelsincyCrosshairComponent::Debug_SetAsyncTraceHandleForAutomation(const FTraceHandle& Handle)
+{
+	AsyncTraceHandle = Handle;
+	AsyncTraceWaitFrames = 0;
+}
+
+void UHelsincyCrosshairComponent::Debug_SetTargetAttitudeForAutomation(const ETeamAttitude::Type Attitude)
+{
+	CurrentTargetAttitude = Attitude;
+}
+
+void UHelsincyCrosshairComponent::Debug_InvokeTraceCompletedForAutomation(const FTraceHandle& Handle, FTraceDatum& Datum)
+{
+	OnTraceCompleted(Handle, Datum);
 }
 #endif
 
@@ -1104,11 +1108,41 @@ void UHelsincyCrosshairComponent::RetryLocalPlayerGuard()
 	TickPendingLocalPlayerGuard();
 }
 
+void UHelsincyCrosshairComponent::ActivateForLocalPlayerOwner()
+{
+	bOwnerCheckPassed = true;
+	SetComponentTickEnabled(true);
+	if (!IsActive())
+	{
+		Activate();
+	}
+	if (!bLocalPlayerInitializationComplete)
+	{
+		PerformFullInitialization();
+		bLocalPlayerInitializationComplete = true;
+	}
+}
+
+void UHelsincyCrosshairComponent::DeactivateForNonLocalOwner()
+{
+	bPendingOwnerCheck = false;
+	bOwnerCheckPassed = false;
+	ClearLocalPlayerGuardRetry();
+	OwningPawn = nullptr;
+	OwnerCharacter = nullptr;
+	ResetCrosshairPresentationState();
+	SetComponentTickEnabled(false);
+	Deactivate();
+	AsyncTraceHandle = FTraceHandle();
+	AsyncTraceWaitFrames = 0;
+}
+
 bool UHelsincyCrosshairComponent::RefreshLocalPlayerGuardForRendering()
 {
 	APawn* Pawn = Cast<APawn>(GetOwner());
 	if (!Pawn)
 	{
+		DeactivateForNonLocalOwner();
 		return false;
 	}
 
@@ -1122,6 +1156,7 @@ bool UHelsincyCrosshairComponent::RefreshLocalPlayerGuardForRendering()
 			PendingCheckFrameCount = 0;
 		}
 		bPendingOwnerCheck = true;
+		bOwnerCheckPassed = false;
 		ResetCrosshairPresentationState();
 		ScheduleLocalPlayerGuardRetry();
 		return false;
@@ -1134,27 +1169,11 @@ bool UHelsincyCrosshairComponent::RefreshLocalPlayerGuardForRendering()
 
 	if (!ShouldActivateForOwner())
 	{
-		bPendingOwnerCheck = false;
-		ClearLocalPlayerGuardRetry();
-		OwningPawn = nullptr;
-		OwnerCharacter = nullptr;
-		ResetCrosshairPresentationState();
-		SetComponentTickEnabled(false);
-		Deactivate();
+		DeactivateForNonLocalOwner();
 		return false;
 	}
 
-	if (!bOwnerCheckPassed)
-	{
-		bOwnerCheckPassed = true;
-		SetComponentTickEnabled(true);
-		if (!IsActive()) Activate();
-		if (!bLocalPlayerInitializationComplete)
-		{
-			PerformFullInitialization();
-			bLocalPlayerInitializationComplete = true;
-		}
-	}
+	ActivateForLocalPlayerOwner();
 
 	return true;
 }
@@ -1177,22 +1196,11 @@ bool UHelsincyCrosshairComponent::TickPendingLocalPlayerGuard()
 		ClearLocalPlayerGuardRetry();
 		if (ShouldActivateForOwner())
 		{
-			bOwnerCheckPassed = true;
-			SetComponentTickEnabled(true);
-			if (!IsActive()) Activate();
-			if (!bLocalPlayerInitializationComplete)
-			{
-				PerformFullInitialization();
-				bLocalPlayerInitializationComplete = true;
-			}
+			ActivateForLocalPlayerOwner();
 		}
 		else
 		{
-			OwningPawn = nullptr;
-			OwnerCharacter = nullptr;
-			ResetCrosshairPresentationState();
-			SetComponentTickEnabled(false);
-			Deactivate();
+			DeactivateForNonLocalOwner();
 		}
 	}
 	else
@@ -1347,11 +1355,9 @@ void UHelsincyCrosshairComponent::OnTraceCompleted(const FTraceHandle& Handle, F
 {
 	SCOPE_CYCLE_COUNTER(STAT_HC_TargetDetectionCallback);
 
-	if (!Handle.IsValid())
+	if (!Handle.IsValid() || !(Handle == AsyncTraceHandle))
 	{
-		// 重置句柄 | Reset handle
-		AsyncTraceHandle = FTraceHandle();
-		ClearTarget();
+		// Ignore stale callbacks from timed-out async traces. A newer request may already be active.
 		return;
 	}
 	
@@ -1369,6 +1375,7 @@ void UHelsincyCrosshairComponent::OnTraceCompleted(const FTraceHandle& Handle, F
 	}
 	// 重置句柄 | Reset handle
 	AsyncTraceHandle = FTraceHandle();
+	AsyncTraceWaitFrames = 0;
 }
 
 void UHelsincyCrosshairComponent::ProcessHitResult(const FHitResult& Hit)

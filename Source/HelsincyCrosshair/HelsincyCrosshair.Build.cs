@@ -25,8 +25,12 @@ public class HelsincyCrosshair : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
-				// ... add other public dependencies that you statically link with here ...
+				"Core",
+				"CoreUObject",
+				"Engine",
+				"GameplayTags",
+				"DeveloperSettings",
+				"AIModule"
 			}
 			);
 			
@@ -34,14 +38,9 @@ public class HelsincyCrosshair : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
-				"Engine",
 				"Slate",
 				"SlateCore",
-				"GameplayTags",
 				"RenderCore",
-				"DeveloperSettings",
-				"AIModule",
 				"HelsincyDamageIndicator"
 			}
 			);

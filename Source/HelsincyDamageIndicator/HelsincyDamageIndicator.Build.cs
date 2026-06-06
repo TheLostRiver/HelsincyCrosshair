@@ -21,20 +21,20 @@ public class HelsincyDamageIndicator : ModuleRules
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core"
+				"Core",
+				"CoreUObject",
+				"Engine",
+				"GameplayTags",
+				"DeveloperSettings"
 			}
 			);
 
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject",
-				"Engine",
 				"Slate",
 				"SlateCore",
-				"GameplayTags",
-				"RenderCore",
-				"DeveloperSettings"
+				"RenderCore"
 			}
 			);
 

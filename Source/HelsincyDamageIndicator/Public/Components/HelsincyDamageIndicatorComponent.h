@@ -59,8 +59,12 @@ public:
 #if WITH_DEV_AUTOMATION_TESTS
 	bool IsWaitingForLocalPlayerController() const { return bPendingOwnerCheck; }
 	int32 GetPendingLocalPlayerGuardFrameCount() const { return PendingCheckFrameCount; }
+	bool Debug_IsOwnerCheckPassedForAutomation() const { return bOwnerCheckPassed; }
+	bool Debug_IsLocalPlayerInitializationCompleteForAutomation() const { return bLocalPlayerInitializationComplete; }
 	void Debug_SetPendingLocalPlayerGuardForAutomation(int32 InitialFrameCount);
 	void Debug_TickPendingLocalPlayerGuardForAutomation();
+	void Debug_ActivateForLocalPlayerGuardForAutomation();
+	void Debug_DeactivateForLocalPlayerGuardForAutomation();
 #endif
 
 #if !UE_BUILD_SHIPPING
@@ -151,6 +155,8 @@ private:
 	void ClearLocalPlayerGuardRetry();
 	void RetryLocalPlayerGuard();
 	bool TickPendingLocalPlayerGuard();
+	void ActivateForLocalPlayerOwner();
+	void DeactivateForNonLocalOwner();
 
 	// 伤害指示器配置 | Damage indicator configuration
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HelsincyDamageIndicator", meta = (AllowPrivateAccess))

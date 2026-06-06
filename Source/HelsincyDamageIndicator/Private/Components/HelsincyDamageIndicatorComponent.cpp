@@ -31,8 +31,7 @@ void UHelsincyDamageIndicatorComponent::BeginPlay()
 		UE_CLOG(HelsincyDamageIndicatorDebug::IsVerboseLogEnabled(), LogHelsincyDamageIndicator, Log,
 			TEXT("[DI][Comp] OwningPawn is NULL. Owner '%s' is not a Pawn. Deactivating component."),
 			*GetNameSafe(GetOwner()));
-		SetComponentTickEnabled(false);
-		Deactivate();
+		DeactivateForNonLocalOwner();
 		return;
 	}
 
@@ -41,23 +40,19 @@ void UHelsincyDamageIndicatorComponent::BeginPlay()
 	{
 		if (ShouldActivateForOwner())
 		{
-			bOwnerCheckPassed = true;
-			SetComponentTickEnabled(true);
-			if (!IsActive()) Activate();
-			PerformFullInitialization();
-			bLocalPlayerInitializationComplete = true;
+			ActivateForLocalPlayerOwner();
 		}
 		else
 		{
 			// 非本地真人玩家, 禁用正常 HUD 逻辑 | Not a local human player, disable normal HUD logic
-			SetComponentTickEnabled(false);
-			Deactivate();
+			DeactivateForNonLocalOwner();
 		}
 	}
 	else
 	{
 		// Controller 未就位, 延迟到 Tick 判定 | Controller not assigned, defer to Tick
 		bPendingOwnerCheck = true;
+		bOwnerCheckPassed = false;
 		PendingCheckFrameCount = 0;
 		ScheduleLocalPlayerGuardRetry();
 	}
@@ -162,6 +157,16 @@ void UHelsincyDamageIndicatorComponent::Debug_TickPendingLocalPlayerGuardForAuto
 {
 	TickPendingLocalPlayerGuard();
 }
+
+void UHelsincyDamageIndicatorComponent::Debug_ActivateForLocalPlayerGuardForAutomation()
+{
+	ActivateForLocalPlayerOwner();
+}
+
+void UHelsincyDamageIndicatorComponent::Debug_DeactivateForLocalPlayerGuardForAutomation()
+{
+	DeactivateForNonLocalOwner();
+}
 #endif
 
 void UHelsincyDamageIndicatorComponent::UpdateIndicators(const float DeltaTime)
@@ -251,11 +256,37 @@ void UHelsincyDamageIndicatorComponent::RetryLocalPlayerGuard()
 	TickPendingLocalPlayerGuard();
 }
 
+void UHelsincyDamageIndicatorComponent::ActivateForLocalPlayerOwner()
+{
+	bOwnerCheckPassed = true;
+	SetComponentTickEnabled(true);
+	if (!IsActive())
+	{
+		Activate();
+	}
+	if (!bLocalPlayerInitializationComplete)
+	{
+		PerformFullInitialization();
+		bLocalPlayerInitializationComplete = true;
+	}
+}
+
+void UHelsincyDamageIndicatorComponent::DeactivateForNonLocalOwner()
+{
+	bPendingOwnerCheck = false;
+	bOwnerCheckPassed = false;
+	ClearLocalPlayerGuardRetry();
+	OwningPawn = nullptr;
+	SetComponentTickEnabled(false);
+	Deactivate();
+}
+
 bool UHelsincyDamageIndicatorComponent::RefreshLocalPlayerGuardForRendering()
 {
 	APawn* Pawn = Cast<APawn>(GetOwner());
 	if (!Pawn)
 	{
+		DeactivateForNonLocalOwner();
 		return false;
 	}
 
@@ -268,6 +299,7 @@ bool UHelsincyDamageIndicatorComponent::RefreshLocalPlayerGuardForRendering()
 			PendingCheckFrameCount = 0;
 		}
 		bPendingOwnerCheck = true;
+		bOwnerCheckPassed = false;
 		ScheduleLocalPlayerGuardRetry();
 		return false;
 	}
@@ -279,24 +311,11 @@ bool UHelsincyDamageIndicatorComponent::RefreshLocalPlayerGuardForRendering()
 
 	if (!ShouldActivateForOwner())
 	{
-		bPendingOwnerCheck = false;
-		ClearLocalPlayerGuardRetry();
-		SetComponentTickEnabled(false);
-		Deactivate();
+		DeactivateForNonLocalOwner();
 		return false;
 	}
 
-	if (!bOwnerCheckPassed)
-	{
-		bOwnerCheckPassed = true;
-		SetComponentTickEnabled(true);
-		if (!IsActive()) Activate();
-		if (!bLocalPlayerInitializationComplete)
-		{
-			PerformFullInitialization();
-			bLocalPlayerInitializationComplete = true;
-		}
-	}
+	ActivateForLocalPlayerOwner();
 
 	return true;
 }
@@ -318,23 +337,16 @@ bool UHelsincyDamageIndicatorComponent::TickPendingLocalPlayerGuard()
 		ClearLocalPlayerGuardRetry();
 		if (ShouldActivateForOwner())
 		{
-			bOwnerCheckPassed = true;
-			SetComponentTickEnabled(true);
-			if (!IsActive()) Activate();
-			if (!bLocalPlayerInitializationComplete)
-			{
-				PerformFullInitialization();
-				bLocalPlayerInitializationComplete = true;
-			}
+			ActivateForLocalPlayerOwner();
 		}
 		else
 		{
-			SetComponentTickEnabled(false);
-			Deactivate();
+			DeactivateForNonLocalOwner();
 		}
 	}
 	else
 	{
+		bOwnerCheckPassed = false;
 		PendingCheckFrameCount++;
 		if (!bLocalPlayerGuardTimeoutLogged && PendingCheckFrameCount >= MaxPendingCheckFrames)
 		{
