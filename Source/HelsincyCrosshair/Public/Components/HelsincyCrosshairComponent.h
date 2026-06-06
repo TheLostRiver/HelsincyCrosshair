@@ -70,8 +70,16 @@ public:
 #if WITH_DEV_AUTOMATION_TESTS
 	bool IsWaitingForLocalPlayerController() const { return bPendingOwnerCheck; }
 	int32 GetPendingLocalPlayerGuardFrameCount() const { return PendingCheckFrameCount; }
+	bool Debug_IsOwnerCheckPassedForAutomation() const { return bOwnerCheckPassed; }
+	bool Debug_IsLocalPlayerInitializationCompleteForAutomation() const { return bLocalPlayerInitializationComplete; }
+	bool Debug_HasActiveAsyncTraceForAutomation() const { return AsyncTraceHandle.IsValid(); }
 	void Debug_SetPendingLocalPlayerGuardForAutomation(int32 InitialFrameCount);
 	void Debug_TickPendingLocalPlayerGuardForAutomation();
+	void Debug_ActivateForLocalPlayerGuardForAutomation();
+	void Debug_DeactivateForLocalPlayerGuardForAutomation();
+	void Debug_SetAsyncTraceHandleForAutomation(const FTraceHandle& Handle);
+	void Debug_SetTargetAttitudeForAutomation(ETeamAttitude::Type Attitude);
+	void Debug_InvokeTraceCompletedForAutomation(const FTraceHandle& Handle, FTraceDatum& Datum);
 #endif
 
 	// 关闭准星 | Disable crosshair
@@ -464,6 +472,8 @@ private:
 	void ClearLocalPlayerGuardRetry();
 	void RetryLocalPlayerGuard();
 	bool TickPendingLocalPlayerGuard();
+	void ActivateForLocalPlayerOwner();
+	void DeactivateForNonLocalOwner();
 
 	void ClearRecoilAndSpread();
 
