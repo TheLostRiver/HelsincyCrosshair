@@ -104,10 +104,8 @@ namespace HelsincySingleHitMarkerSpriteSupport
 		Config.SingleInstanceCoreScale = GetDefaultCoreScale();
 		Config.SingleInstanceGlowScale = GetDefaultGlowScale();
 		Config.SingleInstanceGlowOpacityScale = GetDefaultGlowOpacityScale();
-		if (Config.SingleInstanceSpriteMinDisplayDuration < FHelsincy_SingleHitMarkerState::MinimumSpriteMinDisplayDuration)
-		{
-			Config.SingleInstanceSpriteMinDisplayDuration = FHelsincy_SingleHitMarkerState::DefaultSpriteMinDisplayDuration;
-		}
+		Config.SingleInstanceSpriteMinDisplayDuration =
+			FHelsincy_SingleHitMarkerState::ResolveSpriteMinDisplayDuration(Config);
 		Config.SingleInstanceCrosshairAlphaScale = GetDefaultCrosshairAlphaScale();
 		if (Config.CrosshairVisibilityWhileActive == EHelsincyHitMarkerCrosshairVisibilityPolicy::ScaleAlpha)
 		{
