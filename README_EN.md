@@ -2,6 +2,8 @@
 
 **Language / 语言**: [简体中文](README.md) | English
 
+**Current Version / Engine**: `v4.0.2` / Unreal Engine 4.27
+
 **`HelsincyCrosshair` is a production-ready dynamic crosshair and standalone damage direction indicator HUD plugin for Unreal Engine shooter projects.**
 
 It is not a small sample that only draws a cross at screen center. It is a runtime HUD presentation system designed for real FPS / TPS projects: low-latency `Canvas` / `FCanvas` rendering, 10 built-in crosshair renderers, 3 damage direction indicator styles, COD-style hit feedback, dynamic spread, recoil recovery, target-detection color feedback, DataAsset presets, and built-in `USaveGame` persistence.
@@ -22,7 +24,8 @@ To start using the plugin, read the [English user manual](Docs/UserManual_EN.md)
 - **A marketplace-grade crosshair system, not a demo widget**: 10 registered built-in crosshair renderers covering Cross, Circle, TStyle, Triangle, Rectangle, Chevron, Polygon, Wings, Image, and DotOnly for competitive FPS, TPS, ability shooters, hip-fire HUDs, interaction cues, and specialized weapon reticles.
 - **170+ editable configuration fields**: the core Profiles are fully data-driven, covering color, outline, opacity, global offset, dynamic spread, recoil recovery, shape-specific settings, center dot, target detection, interactable color feedback, hit feedback animation, and damage indicator styles.
 - **Standalone damage direction indicator module**: `HelsincyDamageIndicator` is split into its own Runtime module, with Arrow, Image, and Arc styles plus `RadialCircle` and `WindowEdge` placement modes.
-- **COD-style hit feedback**: supports body hit, headshot, kill, single-instance refresh, multi-instance stacking, twist, scale punch, tapered lines, normal shake, damage-strength response, and base-crosshair visibility policies.
+- **COD-style hit feedback**: supports body hit, headshot, kill, single-instance refresh, multi-instance stacking, twist, scale punch, tapered lines, normal shake, damage-strength response, base-crosshair visibility policies, and the `SpriteDualLayer` Core/Glow texture path.
+- **SpriteDualLayer HitMarker tuning**: complete X textures can use `WholeSpriteShake`; independent four-arm impact can use `PerArmQuadrantShake` with a dedicated single-arm texture; a perceptible minimum sprite duration prevents texture hit markers from reading as one-frame flashes.
 - **Integration paths that respect real projects**: use `AHelsincyHUD` / `BP_HelsincySuperHUD` directly, or integrate through the Bridge API without changing your existing HUD inheritance chain.
 - **Runtime tuning, saving, and restoration**: DataAssets provide defaults, components own runtime Profiles, and built-in `USaveGame` persistence keeps presets across level transitions and restarts.
 - **GameplayTag-driven extension**: crosshair shapes, damage indicator styles, and custom renderers are selected by GameplayTag, with both Blueprint and C++ extension paths.
@@ -78,8 +81,8 @@ The HUD or Bridge render library reads state from the components, resolves the m
 - `Content/DataAsset/DA_Crosshair_Default.uasset`: default crosshair data asset.
 - `Content/DataAsset/DA_DamageIndicator.uasset`: default damage indicator data asset.
 - `Content/ArcImage/T_HDI_Arc_Red_01.uasset`: arc texture for the Arc-style damage indicator.
-- `Content/HitmarkerImage/T_HC_HitMarker_Core.uasset`: core hit marker texture.
-- `Content/HitmarkerImage/T_HC_HitMarker_Glow.uasset`: hit marker glow texture.
+- `Content/HitmarkerImage/T_HC_HitMarker_Core.uasset`: complete-X Core texture for `SpriteDualLayer` hit markers.
+- `Content/HitmarkerImage/T_HC_HitMarker_Glow.uasset`: complete-X Glow texture for `SpriteDualLayer`; independent four-arm mode requires project-provided single-arm textures.
 - `Config/DefaultHelsincyCrosshair.ini`: redirects for old class names, old field names, and module split compatibility.
 
 ## Code Structure
@@ -106,6 +109,8 @@ HelsincyCrosshair/
 ## Data-Driven Configuration
 
 `FHelsincyCrosshairProfile` groups crosshair visuals, dynamic spread, shape parameters, center dot, and hit marker configuration. It can be loaded through `UHelsincyCrosshairDataAsset`.
+
+Hit feedback supports both `SingleInstance` and `MultiInstance` modes. `SingleInstance` is the default COD-style path and can render through procedural `LegacyGeometry` or texture-driven `SpriteDualLayer`; in `SpriteDualLayer`, `WholeSpriteShake` uses one complete X texture, while `PerArmQuadrantShake` draws four independent arms from a single-arm texture. See the [English user manual](Docs/UserManual_EN.md) and [Integration guide](Docs/Integration-Guide.md) for field-level setup.
 
 `FHelsincy_DamageIndicatorProfile` groups damage indicator enablement, lifetime, placement mode, circle, Arrow/Image/Arc style parameters, and persistent preset data. It can be loaded through `UHelsincyDamageIndicatorDataAsset`.
 
@@ -143,6 +148,7 @@ Damage indicator placement modes include:
 
 - This README is based on the current source code and plugin Content assets, not on early design-document assumptions.
 - The current release is `v4.0.2`; `v4.0.0` remains the first public release and does not imply that public v1/v2/v3 releases existed.
+- The current release package is verified with Unreal Engine 4.27. If you use it in a UE5 project, validate compilation and runtime behavior in your target engine version first.
 - `v4.0.2` fixes SpriteDualLayer HitMarker flashing, adds sprite motion presets, and tunes default HitMarker geometry. See [CHANGELOG.md](CHANGELOG.md) for details.
 - `HelsincyDamageIndicator` has been split out of the crosshair module into an independent Runtime module. To show damage direction indicators, you must add `UHelsincyDamageIndicatorComponent`.
 - Whether the default character class has the damage indicator component depends on project-side configuration. The plugin does not force-inject the component into every Pawn.

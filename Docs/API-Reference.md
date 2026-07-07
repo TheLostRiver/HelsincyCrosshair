@@ -31,6 +31,8 @@
    - 3.1 [FHelsincyCrosshairProfile](#31-fhelsincycrosshairprofile)
    - 3.2 [FHelsincy_VisualSettings](#32-fhelsincy_visualsettings)
    - 3.3 [FHelsincy_DynamicsSettings](#33-fhelsincy_dynamicssettings)
+   - 3.3.1 [FHelsincy_CrosshairPresentationSettings](#331-fhelsincy_crosshairpresentationsettings)
+   - 3.3.2 [FHelsincy_CrosshairPresentationState](#332-fhelsincy_crosshairpresentationstate)
    - 3.4 [FHelsincy_CrosshairConfig](#34-fhelsincy_crosshairconfig)
    - 3.5 [FHelsincy_RadialConfig](#35-fhelsincy_radialconfig)
    - 3.6 [FHelsincy_WingsConfig](#36-fhelsincy_wingsconfig)
@@ -38,10 +40,12 @@
    - 3.8 [FHelsincy_ImageConfig](#38-fhelsincy_imageconfig)
    - 3.9 [FHelsincy_CenterDotConfig](#39-fhelsincy_centerdotconfig)
    - 3.10 [FHelsincy_HitMarkerProfile](#310-fhelsincy_hitmarkerprofile)
+      - 3.10.1 [FHelsincy_SingleHitMarkerState](#3101-fhelsincy_singlehitmarkerstate)
    - 3.11 [FHelsincy_DamageIndicatorProfile](#311-fhelsincy_damageindicatorprofile)
 4. [Enums / 枚举](#4-enums--枚举)
 5. [GameplayTags / 标签常量](#5-gameplaytags--标签常量)
 6. [Performance Stats / 性能统计](#6-performance-stats--性能统计)
+7. [Runtime CVars / 运行时控制台变量](#7-runtime-cvars--运行时控制台变量)
 
 ---
 
@@ -108,10 +112,16 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 |--------|-----------|--------|-------------------|-----------|
 | `GetCurrentProfile()` | BlueprintPure | `const FHelsincyCrosshairProfile&` | Get the full active profile. | 获取当前完整配置。 |
 | `GetCurrentVisualPrimaryColor()` | BlueprintPure | `FLinearColor` | Get the resolved primary color (after target color override). | 获取当前主颜色（已含目标变色结果）。 |
+| `GetCrosshairPresentationState()` | BlueprintPure | `FHelsincy_CrosshairPresentationState` | Get a Blueprint copy of the adaptive presentation runtime state. | 获取基础准星自适应表现运行时状态副本。 |
 | `GetFinalSpread()` | BlueprintPure | `FVector2D` | Get total spread = state spread + recoil spread. | 获取总扩散 = 状态扩散 + 后坐力扩散。 |
 | `GetCurrentTargetAttitude()` | BlueprintPure | `ETeamAttitude::Type` | Current target attitude: Hostile / Friendly / Neutral. | 当前瞄准目标的阵营态度。 |
 | `GetCurrentTargetTag()` | BlueprintPure | `FGameplayTag` | Current target's interaction tag (from `IHelsincyTargetInterface`). | 当前目标的交互 Tag。 |
 | `GetActiveHitMarkers()` | C++ only | `const TArray<FHelsincy_ActiveHitMarker>&` | Active hit marker instances for HUD rendering. | 活跃命中标记列表，供 HUD 渲染。 |
+| `GetSingleHitMarkerState()` | C++ only | `const FHelsincy_SingleHitMarkerState&` | Single-instance HitMarker runtime state reference. | 单实例 HitMarker 运行时状态常量引用。 |
+| `IsSingleHitMarkerVisible()` | BlueprintPure | `bool` | Query if the single-instance HitMarker is currently visible. | 查询单实例 HitMarker 当前是否可见。 |
+| `GetSingleHitMarkerPhase()` | BlueprintPure | `EHelsincySingleHitMarkerPhase` | Current single-instance HitMarker lifecycle phase. | 当前单实例 HitMarker 生命周期相位。 |
+| `GetSingleHitMarkerOpacity()` | BlueprintPure | `float` | Cached opacity for the current single-instance phase. | 当前单实例相位的透明度缓存。 |
+| `GetSingleHitMarkerImpactEnergy()` | BlueprintPure | `float` | Cached impact energy for diagnostics/UI. | 当前命中能量缓存，可用于诊断或 UI。 |
 | `GetStateSpread()` | BlueprintPure | `FVector2D` | Movement/airborne spread only (no recoil). | 仅状态扩散（不含后坐力）。 |
 | `GetRecoilSpread()` | BlueprintPure | `FVector2D` | Recoil spread only. | 仅后坐力扩散。 |
 
@@ -447,6 +457,7 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 | `ShapeTag` | `FGameplayTag` | Selects which shape renderer to use. Categories: `Crosshair.Shape`. | 选择使用哪个形状渲染器。 |
 | `VisualsConfig` | `FHelsincy_VisualSettings` | Color, outline, targeting settings. | 颜色、描边、目标识别设置。 |
 | `DynamicConfig` | `FHelsincy_DynamicsSettings` | Spread, recoil, movement dynamics. | 扩散、后坐力、移动动态设置。 |
+| `PresentationConfig` | `FHelsincy_CrosshairPresentationSettings` | Adaptive presentation scale/color/jitter settings. | 自适应表现的缩放、颜色混合和抖动设置。 |
 | `CrosshairConfig` | `FHelsincy_CrosshairConfig` | Cross / TStyle / Chevron shape params. | 十字 / T形 / V形 参数。 |
 | `RadialConfig` | `FHelsincy_RadialConfig` | Circle / Polygon shape params. | 圆形 / 多边形参数。 |
 | `BoxConfig` | `FHelsincy_BoxConfig` | Rectangle / Triangle shape params. | 矩形 / 三角形参数。 |
@@ -494,6 +505,53 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 | `bApplyMovementToY` | `bool` | true | Apply movement spread on vertical axis. | 垂直轴应用移动扩散。 |
 | `RecoilRecoverySpeed` | `float` | 10.0 | Recoil recovery speed. Higher = faster recovery. Range: 5–30. | 后坐力恢复速度。越大恢复越快。 |
 | `MaxRecoilSpread` | `float` | 100.0 | Max recoil spread cap (px). Range: 10–100. | 最大后坐力限制（像素）。 |
+
+---
+
+### 3.3.1 FHelsincy_CrosshairPresentationSettings
+
+Adaptive presentation settings applied on top of the base crosshair profile. They control runtime scale, color blending, and optional fire jitter without changing the underlying shape data.
+
+基础准星的自适应表现配置。它叠加在 Profile 之上，用于控制运行时缩放、颜色混合和可选开火抖动，不会改写底层形状数据。
+
+| Field | Type | Default | Description (EN) | 说明 (CN) |
+|-------|------|---------|-------------------|-----------|
+| `bEnableAdaptivePresentation` | `bool` | true | Master switch for adaptive presentation. | 自适应表现总开关。 |
+| `bEnableAutoScale` | `bool` | true | Enable automatic scale response. | 启用自动缩放响应。 |
+| `bEnableAutoColorBlend` | `bool` | true | Enable smooth color blending toward target/interaction color. | 启用目标或交互颜色的平滑混合。 |
+| `bEnableAutoJitter` | `bool` | false | Enable optional fire jitter offset. | 启用可选开火抖动偏移。 |
+| `IdleScale` | `float` | 1.0 | Base scale when idle. Range: 0.5–2.0. | 静止基础缩放。 |
+| `MoveScaleMax` | `float` | 1.08 | Max scale while moving. Range: 0.5–2.0. | 移动时最大缩放。 |
+| `AirborneScaleMax` | `float` | 1.12 | Max scale while airborne. Range: 0.5–2.0. | 滞空时最大缩放。 |
+| `FireScalePulse` | `float` | 1.06 | Scale pulse applied on fire. Range: 0.5–2.0. | 开火时叠加的缩放脉冲。 |
+| `RecoilScaleContribution` | `float` | 0.05 | Recoil contribution to presentation scale. Range: 0–1. | 后坐力对表现缩放的贡献。 |
+| `ScaleInterpSpeed` | `float` | 12.0 | Interp speed for scale changes. Range: 1–30. | 缩放插值速度。 |
+| `ColorInterpSpeed` | `float` | 16.0 | Interp speed for color changes. Range: 1–30. | 颜色插值速度。 |
+| `FireJitterAmplitude` | `float` | 2.0 | Fire jitter amplitude in pixels. Range: 0–20. | 开火抖动幅度（像素）。 |
+| `JitterRecoverySpeed` | `float` | 12.0 | Jitter recovery speed. Range: 1–30. | 抖动恢复速度。 |
+
+---
+
+### 3.3.2 FHelsincy_CrosshairPresentationState
+
+Blueprint-readable runtime state generated from `PresentationConfig`, movement/recoil state, and target color resolution.
+
+由 `PresentationConfig`、移动/后坐力状态和目标颜色解析结果生成的运行时状态，可供蓝图读取。
+
+| Field | Type | Default | Description (EN) | 说明 (CN) |
+|-------|------|---------|-------------------|-----------|
+| `TargetScale` | `float` | 1.0 | Desired adaptive presentation scale. | 目标自适应表现缩放。 |
+| `CurrentScale` | `float` | 1.0 | Interpolated presentation scale currently used for rendering. | 当前渲染使用的插值后表现缩放。 |
+| `TargetColor` | `FLinearColor` | White | Desired resolved color. | 目标解析颜色。 |
+| `CurrentColor` | `FLinearColor` | White | Interpolated color currently used for rendering. | 当前渲染使用的插值后颜色。 |
+| `CurrentJitterOffset` | `FVector2D` | (0, 0) | Current screen-space jitter offset in pixels. | 当前屏幕空间抖动偏移（像素）。 |
+| `CurrentJitterStrength` | `float` | 0.0 | Current jitter strength. | 当前抖动强度。 |
+| `FirePulseStrength` | `float` | 0.0 | Current fire pulse contribution. | 当前开火脉冲贡献。 |
+| `RecoilContribution` | `float` | 0.0 | Current recoil contribution to scale. | 当前后坐力缩放贡献。 |
+| `MovementContribution` | `float` | 0.0 | Current movement contribution to scale. | 当前移动缩放贡献。 |
+| `AirborneContribution` | `float` | 0.0 | Current airborne contribution to scale. | 当前滞空缩放贡献。 |
+| `bHasTargetColorOverride` | `bool` | false | Whether target/interaction color overrides base color. | 当前是否存在目标或交互颜色覆盖。 |
+| `ActiveColorReason` | `FName` | None | Reason/name for the active color override. | 当前颜色覆盖原因或名称。 |
 
 ---
 
@@ -611,7 +669,7 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 | `DamageToImpactScale` | `float` | 0.35 | Damage influence on impact strength. Range: 0–1. | 伤害对冲击强度的影响。 |
 | `MaxImpactMotionEnergy` | `float` | 1.8 | Max accumulated impact motion energy. Range: 0.25–4. | 最大冲击运动能量。 |
 | `bShakeDecay` | `bool` | true | Shake decays over time. | 震动随时间衰减。 |
-| `CustomTexture` | `UTexture2D*` | nullptr | Optional custom image. Null = procedural draw. | 可选自定义图片。空则程序化绘制。 |
+| `CustomTexture` | `UTexture2D*` | nullptr | Legacy/custom image path for non-`SpriteDualLayer` hit markers. `SpriteDualLayer` ignores this field; use `SingleInstanceCoreTexture` / `SingleInstanceGlowTexture`, or per-arm textures. Null = procedural draw. | 非 `SpriteDualLayer` 命中标记使用的旧自定义图片路径。`SpriteDualLayer` 不使用此字段；请改用 `SingleInstanceCoreTexture` / `SingleInstanceGlowTexture` 或单臂贴图。空则程序化绘制。 |
 | `HitPulseScale` | `float` | 1.2 | SingleInstance mode: scale pulse on hit (1.0 = no pulse). Range: 1–2. | 单实例模式: 命中时缩放脉冲强度。 |
 | `HitPulseRecoverySpeed` | `float` | 15.0 | SingleInstance mode: pulse recovery interp speed. Range: 5–30. | 单实例模式: 脉冲恢复插值速度。 |
 | `KillPulseScale` | `float` | 1.5 | SingleInstance mode: kill pulse scale (stronger than normal hit). Range: 1–3. | 单实例模式: 击杀脉冲缩放（大于普通命中）。 |
@@ -837,3 +895,34 @@ The plugin exposes UE4 `STAT` groups for runtime profiling. Use these console co
 | `STAT_HDI_UpdateIndicators` | DamageIndicator Update Indicators | Active indicator lifetime, angle, and smoothing update cost. | 活跃指示器生命周期、角度和平滑状态更新开销。 |
 | `STAT_HDI_BridgeDraw` | DamageIndicator Bridge Draw | Bridge API damage indicator draw entry cost. | Bridge API 伤害指示器绘制入口开销。 |
 | `STAT_HDI_DrawIndicators` | DamageIndicator Draw Indicators | Circle, WindowEdge/RadialCircle placement, and concrete renderer draw cost. | 圆环、WindowEdge/RadialCircle 放置和具体 Renderer 绘制开销。 |
+
+---
+
+## 7. Runtime CVars / 运行时控制台变量
+
+Debug CVars are compiled out in Shipping builds. Most debug channels require the module master switch to be enabled first.
+
+调试控制台变量在 Shipping 构建中会被编译关闭。大多数调试通道需要先开启对应模块的主开关。
+
+### Crosshair Debug CVars / 准星调试变量
+
+| CVar | Default | Description (EN) | 说明 (CN) |
+|------|---------|-------------------|-----------|
+| `hc.Debug.Enable` | 0 | Master switch for crosshair debug output. | 准星调试输出总开关。 |
+| `hc.Debug.Text` | 1 | Enable `showdebug Crosshair` text output. Requires `hc.Debug.Enable=1`. | 启用 `showdebug Crosshair` 屏幕文字输出；需要 `hc.Debug.Enable=1`。 |
+| `hc.Debug.Geometry` | 0 | Enable crosshair debug geometry. Requires `hc.Debug.Enable=1`. | 启用准星调试几何；需要 `hc.Debug.Enable=1`。 |
+| `hc.Debug.VerboseLog` | 0 | Enable verbose crosshair logs. Requires `hc.Debug.Enable=1`. | 启用准星详细日志；需要 `hc.Debug.Enable=1`。 |
+| `hc.Debug.HitMarkerDiag` | 0 | Enable SingleInstance HitMarker diagnostics, including draw-path/state details. Requires `hc.Debug.Enable=1`. | 启用 SingleInstance HitMarker 诊断，包括绘制路径和状态细节；需要 `hc.Debug.Enable=1`。 |
+| `hc.Debug.OnlyLocal` | 1 | Only output debug for locally controlled pawns. | 仅对本地控制 Pawn 输出调试信息。 |
+| `hc.HitMarker.SoftGuard` | 1 | Prevent duplicate single-instance HitMarker draws across HUD and Bridge in the same frame. | 防止同一帧内 HUD 与 Bridge 重复绘制单实例 HitMarker。 |
+
+### Damage Indicator Debug CVars / 伤害指示器调试变量
+
+| CVar | Default | Description (EN) | 说明 (CN) |
+|------|---------|-------------------|-----------|
+| `di.Debug.Enable` | 0 | Master switch for damage indicator debug output. | 伤害指示器调试输出总开关。 |
+| `di.Debug.Text` | 1 | Enable `showdebug DamageIndicator` text output. Requires `di.Debug.Enable=1`. | 启用 `showdebug DamageIndicator` 屏幕文字输出；需要 `di.Debug.Enable=1`。 |
+| `di.Debug.Geometry` | 0 | Enable damage indicator debug geometry. Requires `di.Debug.Enable=1`. | 启用伤害指示器调试几何；需要 `di.Debug.Enable=1`。 |
+| `di.Debug.VerboseLog` | 0 | Enable verbose damage indicator logs. Requires `di.Debug.Enable=1`. | 启用伤害指示器详细日志；需要 `di.Debug.Enable=1`。 |
+| `di.Test.DrawInViewport` | 0 | Validation-only viewport debug draw bridge for damage indicator tests. | 验证用视口调试绘制桥接，仅用于伤害指示器测试。 |
+| `di.Test.SourceDistance` | 1200.0 | World-space source distance used by `di.Test.Spawn` validation events. | `di.Test.Spawn` 验证事件使用的世界空间来源距离。 |

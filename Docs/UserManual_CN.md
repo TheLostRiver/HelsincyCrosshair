@@ -157,12 +157,15 @@ void AMyHUD::DrawHUD()
 | `Trigger Hit Marker Color` | 自定义颜色命中 | 你传入的颜色参数 |
 | `Trigger Headshot Marker` | 爆头命中 | `Hit Marker Config → Headshot Color` |
 | `Trigger Kill Marker` | 击杀命中 | `Hit Marker Config → Kill Color` |
+| `Trigger Hit Marker Advanced` | 高级命中反馈 | 优先级、自定义颜色、伤害强度缩放 |
 
 **蓝图操作**：
 1. 在武器命中确认事件中，获取 `HelsincyCrosshairComponent`。
 2. 根据命中类型调用对应的节点。
 
 > 默认情况下，只要任意 HitMarker 可见，基础准心和中心圆点会临时隐藏，并在反馈结束后自动恢复。如需旧版 SingleInstance 透明度弱化效果，将 `CrosshairVisibilityWhileActive` 设为 `ScaleAlpha`；如需保持基础准心显示，设为 `KeepVisible`。
+>
+> 使用贴图版 HitMarker 时，将 `SingleInstanceRenderMode` 设为 `SpriteDualLayer`，再配置 `SingleInstanceCoreTexture` / `SingleInstanceGlowTexture`。`WholeSpriteShake` 适合完整 X 贴图整体震动；`PerArmQuadrantShake` 适合四臂独立震动，但必须提供单臂贴图 `SingleInstanceArmTexture`，不会复用完整 X 贴图。
 
 ### 4.3 切换武器时 — 加载不同准心
 
@@ -368,16 +371,23 @@ void AMyHUD::DrawHUD()
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
 | Enabled | true | 启用命中标记 |
+| Mode | SingleInstance | 命中反馈模式：`SingleInstance` 为 COD 风格单实例刷新；`MultiInstance` 为经典多实例 |
 | `CrosshairVisibilityWhileActive` | Hide | HitMarker 可见期间的基础准心策略：`Hide`、`KeepVisible` 或 `ScaleAlpha` |
 | `CrosshairAlphaScaleWhileHitMarkerActive` | 0.10 | 仅 `ScaleAlpha` 使用的透明度倍率，可保留旧版 SingleInstance 弱化效果 |
 | `bApplyHitMarkerVisibilityPolicyToCenterDot` | true | 将同样的隐藏或透明度策略应用到中心圆点 |
 | Use Tapered Shape | true | 使用尖头风格（类 CoD）。false 则为等宽线条 |
 | Duration | 0.25 秒 | 命中标记持续时间 |
+| Merge Threshold | 0.15 秒 | 多实例模式下合并连续命中反馈的阈值 |
 | Color | 白色 | 普通命中颜色 |
 | Headshot Color | 红色 | 爆头颜色 |
 | Head Shot Scale | 1.3 | 爆头时大小倍率 |
 | Kill Color | 红色 | 击杀颜色 |
 | Kill Scale | 1.7 | 击杀时大小倍率 |
+| Clear All Old Hit Marker On Kill | true | 击杀反馈触发时清理非击杀命中反馈 |
+| Thickness | 1.0 | HitMarker 线条粗细 |
+| Base Distance | 8.0 | 多实例 HitMarker 离中心的基础距离 |
+| Start Size / End Size | 12.0 / 6.0 | 多实例命中反馈的线段长度动画 |
+| Start Offset / End Offset | 0.0 / 12.0 | 多实例命中反馈的中心偏移动画 |
 | Shake Intensity | 5.0 | 全局震动强度（像素） |
 | Normal Shake Intensity | 5.0 | 单臂法线震动强度（让标记看起来在"颤抖"） |
 | Shake Frequency | 34.0 | 确定性震动频率。值越高回弹越快 |
@@ -393,7 +403,23 @@ void AMyHUD::DrawHUD()
 | Damage To Impact Scale | 0.35 | 伤害强度对冲击感的额外影响 |
 | Max Impact Motion Energy | 1.8 | 高频命中时的最大冲击能量上限 |
 | Shake Decay | true | 震动随时间衰减 |
-| Custom Texture | 空 | 可选的自定义命中标记图片 |
+| Custom Texture | 空 | 旧版自定义命中标记图片；`SpriteDualLayer` 不使用此字段 |
+| Hit Pulse Scale | 1.2 | 单实例命中时的缩放脉冲 |
+| Hit Pulse Recovery Speed | 15.0 | 单实例脉冲恢复速度 |
+| Kill Pulse Scale | 1.5 | 单实例击杀命中时的额外缩放脉冲 |
+| Single Instance Size | 10.0 | 单实例 HitMarker 固定臂长 |
+| Single Instance Offset | 8.0 | 单实例 HitMarker 固定中心距离 |
+| Single Instance Render Mode | LegacyGeometry | `LegacyGeometry` 为程序化四臂绘制；`SpriteDualLayer` 为 Core/Glow 贴图绘制 |
+| Single Instance Sprite Motion Mode | WholeSpriteShake | `WholeSpriteShake` 整张 X 图震动；`PerArmQuadrantShake` 使用单臂贴图绘制四臂 |
+| Single Instance Sprite Min Display Duration | 0.35 秒 | `SpriteDualLayer` 最短可感知显示时间，避免一闪而过 |
+| Single Instance Core Texture / Glow Texture | 空 | `SpriteDualLayer` 完整 X 的 Core / Glow 贴图 |
+| Single Instance Arm Texture / Arm Glow Texture | 空 | `PerArmQuadrantShake` 专用单臂 Core / Glow 贴图；缺少可用 Core 时回退 `LegacyGeometry` |
+| Single Instance Core Scale / Glow Scale | 0.80 / 0.86 | Sprite Core / Glow 尺寸倍率 |
+| Single Instance Glow Opacity Scale | 0.26 | Sprite Glow 额外透明度倍率 |
+| Single Instance Fade Ratio | 0.3 | 单实例尾部淡出占比 |
+| Single Instance Max Impact Energy | 1.0 | 单实例命中能量上限 |
+| Single Instance Impact Decay Speed | 8.0 | 单实例命中能量衰减速度 |
+| Single Instance Accent Duration | 0.08 秒 | 单实例命中强调段持续时间 |
 
 ### 7.4 中心点设置 (Center Dot Config)
 
@@ -587,6 +613,7 @@ if (GEngine)
 | `hc.Debug.Text` | 1 | 开启屏幕文字调试输出 |
 | `hc.Debug.Geometry` | 0 | 开启几何可视化（在屏幕上绘制调试线条和框） |
 | `hc.Debug.VerboseLog` | 0 | 开启详细日志输出到 Output Log |
+| `hc.Debug.HitMarkerDiag` | 0 | 开启 SingleInstance HitMarker 绘制路径诊断 |
 | `hc.Debug.OnlyLocal` | 1 | 仅对本地控制角色输出调试信息 |
 
 #### 伤害指示器调试

@@ -156,6 +156,20 @@ CrosshairComponent->AddRecoil(HorizontalKick, VerticalKick);
 
 推荐把这些调用放在武器命中确认或伤害结算成功之后，而不是单纯射线命中就触发。
 
+#### SingleInstance / SpriteDualLayer 配置建议
+
+当前默认 HitMarker 模式为 `SingleInstance`，适合大多数 FPS/TPS 命中反馈。如果需要贴图版 HitMarker，可在 `HitMarkerConfig` 中设置：
+
+| 字段 | 建议 | 说明 |
+|------|------|------|
+| `Mode` | `SingleInstance` | 始终只保留一个命中反馈，连续命中会刷新状态 |
+| `SingleInstanceRenderMode` | `LegacyGeometry` 或 `SpriteDualLayer` | `LegacyGeometry` 使用程序化四臂绘制；`SpriteDualLayer` 使用 Core/Glow 贴图 |
+| `SingleInstanceSpriteMotionMode` | `WholeSpriteShake` | SpriteDualLayer 默认整张 X 贴图震动，稳定且不需要额外单臂贴图 |
+| `SingleInstanceSpriteMotionMode` | `PerArmQuadrantShake` | 使用四条独立单臂 sprite 模拟四臂震动；必须配置 `SingleInstanceArmTexture`，可选配置 `SingleInstanceArmGlowTexture` |
+| `SingleInstanceSpriteMinDisplayDuration` | `0.35` | SpriteDualLayer 的最短可感知显示时间，避免短 `Duration` 或旧资产导致一闪而过 |
+
+注意：`SpriteDualLayer` 不会复用旧字段 `CustomTexture` 作为完整 X 贴图。完整 sprite 模式请配置 `SingleInstanceCoreTexture` / `SingleInstanceGlowTexture`；四臂 sprite 模式请配置 `SingleInstanceArmTexture` / `SingleInstanceArmGlowTexture`。如果四臂模式缺少可用单臂 Core 贴图，运行时会回退到 `LegacyGeometry`，避免错误切割完整 X 贴图。
+
 ### 6.3 玩家受伤时（HelsincyDamageIndicator 模块）
 
 在角色的 TakeDamage、AnyDamage 或自定义伤害响应中调用：

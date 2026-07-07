@@ -157,12 +157,15 @@ After confirming damage (not just a raycast hit), call the appropriate node:
 | `Trigger Hit Marker Color` | Custom color hit | The color you pass in |
 | `Trigger Headshot Marker` | Headshot | `Hit Marker Config → Headshot Color` |
 | `Trigger Kill Marker` | Kill confirmed | `Hit Marker Config → Kill Color` |
+| `Trigger Hit Marker Advanced` | Advanced hit feedback | Priority, custom color, and damage-scaled impact feedback |
 
 **Blueprint**:
 1. In your weapon hit confirmation event, get the `HelsincyCrosshairComponent`.
 2. Call the appropriate trigger node based on hit type.
 
 > By default, while any HitMarker is visible, the base crosshair and center dot are hidden, then restored automatically when feedback ends. Set `CrosshairVisibilityWhileActive` to `ScaleAlpha` to keep the old SingleInstance alpha-weakening look, or `KeepVisible` to leave the base crosshair unchanged.
+>
+> For sprite-based hit markers, set `SingleInstanceRenderMode` to `SpriteDualLayer`, then assign `SingleInstanceCoreTexture` / `SingleInstanceGlowTexture`. `WholeSpriteShake` is for shaking a complete X sprite as one image; `PerArmQuadrantShake` is for independent four-arm motion and requires a dedicated single-arm `SingleInstanceArmTexture`. It does not reuse the complete X sprite.
 
 ### 4.3 On Weapon Switch — Load Different Crosshair
 
@@ -368,16 +371,23 @@ All configuration lives under `FHelsincyCrosshairProfile`, editable in any DataA
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | Enabled | true | Enable hit markers |
+| Mode | SingleInstance | Hit marker mode: `SingleInstance` refreshes one COD-style marker; `MultiInstance` keeps the classic multi-marker behavior |
 | `CrosshairVisibilityWhileActive` | Hide | Base crosshair policy while any HitMarker is visible: `Hide`, `KeepVisible`, or `ScaleAlpha` |
 | `CrosshairAlphaScaleWhileHitMarkerActive` | 0.10 | Alpha multiplier used only by `ScaleAlpha`; preserves the old SingleInstance weakening style |
 | `bApplyHitMarkerVisibilityPolicyToCenterDot` | true | Applies the same hide or alpha policy to the center dot |
 | Use Tapered Shape | true | CoD-style tapered lines (thick-center, thin-ends). False = uniform lines |
 | Duration | 0.25s | How long the marker stays visible |
+| Merge Threshold | 0.15s | Remaining-time threshold for merging rapid hit markers in multi-instance mode |
 | Color | White | Normal hit color |
 | Headshot Color | Red | Headshot indicator color |
 | Head Shot Scale | 1.3 | Headshot size multiplier |
 | Kill Color | Red | Kill marker color |
 | Kill Scale | 1.7 | Kill size multiplier |
+| Clear All Old Hit Marker On Kill | true | Clears non-kill hit markers when a kill marker is triggered |
+| Thickness | 1.0 | Hit marker line thickness |
+| Base Distance | 8.0 | Base distance from center for multi-instance markers |
+| Start Size / End Size | 12.0 / 6.0 | Multi-instance line-length animation |
+| Start Offset / End Offset | 0.0 / 12.0 | Multi-instance center-offset animation |
 | Shake Intensity | 5.0 | Global shake intensity (px) |
 | Normal Shake Intensity | 5.0 | Per-arm shake ("electric" trembling effect) |
 | Shake Frequency | 34.0 | Deterministic shake frequency. Higher values snap back faster |
@@ -393,7 +403,23 @@ All configuration lives under `FHelsincyCrosshairProfile`, editable in any DataA
 | Damage To Impact Scale | 0.35 | Additional impact response from normalized damage |
 | Max Impact Motion Energy | 1.8 | Maximum impact motion energy under rapid hits |
 | Shake Decay | true | Shake diminishes over time |
-| Custom Texture | None | Optional custom hit marker image |
+| Custom Texture | None | Legacy custom hit marker image; `SpriteDualLayer` does not use this field |
+| Hit Pulse Scale | 1.2 | Single-instance scale pulse on hit |
+| Hit Pulse Recovery Speed | 15.0 | Single-instance pulse recovery speed |
+| Kill Pulse Scale | 1.5 | Extra single-instance pulse scale on kill |
+| Single Instance Size | 10.0 | Fixed arm length for single-instance hit markers |
+| Single Instance Offset | 8.0 | Fixed center distance for single-instance hit markers |
+| Single Instance Render Mode | LegacyGeometry | `LegacyGeometry` uses procedural four-arm rendering; `SpriteDualLayer` uses Core/Glow textures |
+| Single Instance Sprite Motion Mode | WholeSpriteShake | `WholeSpriteShake` shakes one complete X sprite; `PerArmQuadrantShake` draws four single-arm sprites |
+| Single Instance Sprite Min Display Duration | 0.35s | Minimum perceptible `SpriteDualLayer` display duration to prevent one-frame flashes |
+| Single Instance Core Texture / Glow Texture | None | Complete-X Core / Glow textures for `SpriteDualLayer` |
+| Single Instance Arm Texture / Arm Glow Texture | None | Single-arm Core / Glow textures for `PerArmQuadrantShake`; missing usable Core falls back to `LegacyGeometry` |
+| Single Instance Core Scale / Glow Scale | 0.80 / 0.86 | Sprite Core / Glow size multipliers |
+| Single Instance Glow Opacity Scale | 0.26 | Extra opacity multiplier for the Glow layer |
+| Single Instance Fade Ratio | 0.3 | Tail-fade portion of single-instance lifetime |
+| Single Instance Max Impact Energy | 1.0 | Single-instance impact energy cap |
+| Single Instance Impact Decay Speed | 8.0 | Single-instance impact energy decay speed |
+| Single Instance Accent Duration | 0.08s | Duration of the single-instance hit accent phase |
 
 ### 7.4 Center Dot Settings (Center Dot Config)
 
@@ -587,6 +613,7 @@ While the game is running, open the console (press `~`) and type:
 | `hc.Debug.Text` | 1 | Enable on-screen text debug output |
 | `hc.Debug.Geometry` | 0 | Enable geometry visualization (debug lines and boxes on screen) |
 | `hc.Debug.VerboseLog` | 0 | Enable verbose log output to Output Log |
+| `hc.Debug.HitMarkerDiag` | 0 | Enable SingleInstance HitMarker draw-path diagnostics |
 | `hc.Debug.OnlyLocal` | 1 | Only output debug for locally controlled character |
 
 #### Damage Indicator Debug
