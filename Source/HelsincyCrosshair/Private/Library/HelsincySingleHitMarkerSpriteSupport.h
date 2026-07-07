@@ -21,6 +21,7 @@ namespace HelsincySingleHitMarkerSpriteSupport
 		EResolvedSingleHitMarkerSpriteMode Mode = EResolvedSingleHitMarkerSpriteMode::LegacyGeometry;
 		UTexture2D* CoreTexture = nullptr;
 		UTexture2D* GlowTexture = nullptr;
+		bool bUsePerArmSprites = false;
 	};
 
 	inline const TCHAR* GetDefaultDataAssetPath()
@@ -80,6 +81,11 @@ namespace HelsincySingleHitMarkerSpriteSupport
 		return ObjectPath ? LoadObject<UTexture2D>(nullptr, ObjectPath) : nullptr;
 	}
 
+	inline bool HasUsableSpriteResource(const UTexture2D* Texture)
+	{
+		return Texture && Texture->GetResource();
+	}
+
 	inline void ApplyDefaultSpriteBindings(FHelsincy_HitMarkerProfile& Config, const UObject* SourceAsset)
 	{
 		if (!Config.bEnabled || Config.Mode != EHitMarkerMode::SingleInstance)
@@ -98,6 +104,10 @@ namespace HelsincySingleHitMarkerSpriteSupport
 		Config.SingleInstanceCoreScale = GetDefaultCoreScale();
 		Config.SingleInstanceGlowScale = GetDefaultGlowScale();
 		Config.SingleInstanceGlowOpacityScale = GetDefaultGlowOpacityScale();
+		if (Config.SingleInstanceSpriteMinDisplayDuration < FHelsincy_SingleHitMarkerState::MinimumSpriteMinDisplayDuration)
+		{
+			Config.SingleInstanceSpriteMinDisplayDuration = FHelsincy_SingleHitMarkerState::DefaultSpriteMinDisplayDuration;
+		}
 		Config.SingleInstanceCrosshairAlphaScale = GetDefaultCrosshairAlphaScale();
 		if (Config.CrosshairVisibilityWhileActive == EHelsincyHitMarkerCrosshairVisibilityPolicy::ScaleAlpha)
 		{
@@ -125,13 +135,27 @@ namespace HelsincySingleHitMarkerSpriteSupport
 			return Result;
 		}
 
-		Result.CoreTexture = Config.SingleInstanceCoreTexture;
-		Result.GlowTexture = Config.SingleInstanceGlowTexture;
+		Result.bUsePerArmSprites =
+			Config.SingleInstanceSpriteMotionMode == EHelsincySingleHitMarkerSpriteMotionMode::PerArmQuadrantShake;
+		Result.CoreTexture = Result.bUsePerArmSprites
+			? Config.SingleInstanceArmTexture
+			: Config.SingleInstanceCoreTexture;
+		Result.GlowTexture = Result.bUsePerArmSprites
+			? Config.SingleInstanceArmGlowTexture
+			: Config.SingleInstanceGlowTexture;
 
-		if (!Result.CoreTexture)
+		if (!HasUsableSpriteResource(Result.CoreTexture))
 		{
 			Result.Mode = EResolvedSingleHitMarkerSpriteMode::LegacyGeometry;
+			Result.CoreTexture = nullptr;
+			Result.GlowTexture = nullptr;
+			Result.bUsePerArmSprites = false;
 			return Result;
+		}
+
+		if (!HasUsableSpriteResource(Result.GlowTexture))
+		{
+			Result.GlowTexture = nullptr;
 		}
 
 		Result.Mode = Result.GlowTexture

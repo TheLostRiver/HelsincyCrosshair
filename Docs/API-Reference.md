@@ -618,12 +618,14 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 | `SingleInstanceSize` | `float` | 10.0 | SingleInstance fixed line size, replacing StartSize/EndSize animation. Range: 4–40. | 单实例固定线条大小，替代 StartSize/EndSize 动画。 |
 | `SingleInstanceOffset` | `float` | 8.0 | SingleInstance fixed center distance, replacing StartOffset/EndOffset animation. Range: 2–30. | 单实例固定中心距离，替代 StartOffset/EndOffset 动画。 |
 | `SingleInstanceRenderMode` | `EHelsincySingleHitMarkerRenderMode` | LegacyGeometry | SingleInstance render backend: procedural geometry or dual-layer sprites. | 单实例渲染后端：程序化几何或双层贴图。 |
+| `SingleInstanceSpriteMotionMode` | `EHelsincySingleHitMarkerSpriteMotionMode` | PerArmQuadrantShake | SpriteDualLayer motion preset. Both presets draw full Core/Glow textures for stable readability; the enum keeps saved-asset compatibility. | `SpriteDualLayer` 运动预设；两个预设都会绘制完整 Core/Glow 贴图以保持稳定可读，枚举名保留用于兼容旧资产。 |
+| `SingleInstanceSpriteMinDisplayDuration` | `float` | 0.35 | SpriteDualLayer minimum display duration. Range: 0.10–1.00. Invalid saved values below 0.10 fall back to 0.35 at runtime, preventing sprite hitmarkers from reading as a single-frame flash when `Duration` is short. | `SpriteDualLayer` 最小显示时长；旧资产保存的无效值低于 0.10 时运行时回退到 0.35，避免通用 `Duration` 较短时贴图命中标记看起来像闪一下。 |
 | `SingleInstanceCoreTexture` | `UTexture2D*` | nullptr | Optional core sprite for `SpriteDualLayer`. | `SpriteDualLayer` 的可选核心贴图。 |
 | `SingleInstanceGlowTexture` | `UTexture2D*` | nullptr | Optional glow sprite for `SpriteDualLayer`. | `SpriteDualLayer` 的可选辉光贴图。 |
 | `SingleInstanceCoreScale` | `float` | 0.80 | Core sprite size multiplier. Range: 0.25–3.0. | 核心贴图尺寸倍率。 |
 | `SingleInstanceGlowScale` | `float` | 0.86 | Glow sprite size multiplier. Range: 0.25–3.0. | 辉光贴图尺寸倍率。 |
 | `SingleInstanceGlowOpacityScale` | `float` | 0.26 | Extra glow opacity multiplier. Range: 0–1. | 辉光额外透明度倍率。 |
-| `SingleInstanceFadeRatio` | `float` | 0.3 | Fraction of total duration used for tail fade. Range: 0.1–0.8. | 总时长中用于尾部淡出的比例。 |
+| `SingleInstanceFadeRatio` | `float` | 0.3 | Fraction of total duration used for tail fade. A minimum perceptible fade window is applied for short durations. Range: 0.1–0.8. | 总时长中用于尾部淡出的比例；短时长下会保留最小可感知淡出窗口。 |
 | `SingleInstanceMaxImpactEnergy` | `float` | 1.0 | Max cached impact energy for derived state. Range: 0.1–4.0. | 派生状态使用的最大命中能量。 |
 | `SingleInstanceImpactDecaySpeed` | `float` | 8.0 | Impact energy decay speed. Range: 0.1–30. | 命中能量衰减速度。 |
 | `SingleInstanceAccentDuration` | `float` | 0.08 | Duration of the hit accent phase. Range: 0.01–0.3. | 命中强调段持续时间。 |
@@ -743,6 +745,13 @@ Key fields:
 |-------|-------------------|------------|
 | `LegacyGeometry` | Legacy Geometry | 使用程序化几何绘制单实例 HitMarker。 |
 | `SpriteDualLayer` | Sprite Dual-Layer | 使用 Core + Glow 双层贴图绘制单实例 HitMarker。 |
+
+### EHelsincySingleHitMarkerSpriteMotionMode
+
+| Value | Display Name (EN) | 说明 (CN) |
+|-------|-------------------|------------|
+| `PerArmQuadrantShake` | Per-Arm Quadrant Shake | 兼容旧资产的默认预设；运行时仍绘制完整 Core/Glow 贴图，避免细线贴图因象限切分出现闪烁或缺臂。 |
+| `WholeSpriteShake` | Whole Sprite Shake | 整张 Core/Glow 贴图一起位移、缩放和旋转，作为稳定的完整贴图表现。 |
 
 ### EHelsincySingleHitMarkerPhase
 
