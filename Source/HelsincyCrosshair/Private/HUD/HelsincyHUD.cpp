@@ -112,7 +112,7 @@ void AHelsincyHUD::DrawHUD()
 						&& HelsincyCrosshairDebug::ShouldSkipSingleHitMarkerDraw(GetOwningPlayerController(), EHelsincyHitMarkerDrawPath::HUD);
 					if (!bSkipSingleHitMarkerDraw)
 					{
-						HelsincySingleHitMarkerRenderCore::DrawSingleHitMarker(
+						const bool bDrewSingleHitMarker = HelsincySingleHitMarkerRenderCore::DrawSingleHitMarker(
 							Canvas,
 							Profile,
 							SingleHitMarkerState,
@@ -120,6 +120,10 @@ void AHelsincyHUD::DrawHUD()
 							Scale,
 							GetCrosshairManagerSubsystem()
 						);
+						if (bDrewSingleHitMarker)
+						{
+							HelsincyCrosshairDebug::RecordSingleHitMarkerDraw(GetOwningPlayerController(), EHelsincyHitMarkerDrawPath::HUD);
+						}
 					}
 				}
 				else
@@ -446,6 +450,12 @@ void AHelsincyHUD::ShowDebugCrosshairPanel(float& YL, float& YPos)
 					? TEXT("SpriteDualLayer")
 					: TEXT("LegacyGeometry");
 			};
+			const auto SpriteMotionModeToString = [](EHelsincySingleHitMarkerSpriteMotionMode InMode) -> const TCHAR*
+			{
+				return InMode == EHelsincySingleHitMarkerSpriteMotionMode::WholeSpriteShake
+					? TEXT("WholeSpriteShake")
+					: TEXT("PerArmQuadrantShake");
+			};
 			const auto ResolvedModeToString = [](HelsincySingleHitMarkerSpriteSupport::EResolvedSingleHitMarkerSpriteMode InMode) -> const TCHAR*
 			{
 				switch (InMode)
@@ -522,6 +532,11 @@ void AHelsincyHUD::ShowDebugCrosshairPanel(float& YL, float& YPos)
 					ConfigModeToString(HitMarkerConfig.SingleInstanceRenderMode),
 					ResolvedModeToString(ResolvedSpriteAssets.Mode)),
 					BackendColor);
+				if (bSpriteRequested)
+				{
+					DrawLine(FString::Printf(TEXT("Sprite Motion:%s"),
+						SpriteMotionModeToString(HitMarkerConfig.SingleInstanceSpriteMotionMode)));
+				}
 				DrawLine(FString::Printf(TEXT("Sprite Tex:   Core=%s (%s)"),
 					*GetNameSafe(HitMarkerConfig.SingleInstanceCoreTexture),
 					TextureStateToString(HitMarkerConfig.SingleInstanceCoreTexture)),
@@ -998,7 +1013,7 @@ void AHelsincyHUD::DrawHitMarker_Image(const FHelsincy_HitMarkerProfile& Config,
 		const FVector2D Dir = HelsincyHitMarkerShakeMath::RotateDirection(HitMarkerDirs[i], State.ImpactRotationDegrees);
 		FVector2D Pos = State.BasePosition + State.CalculatedGlobalOffset + (Dir * State.InnerOffset) - (TexSize * 0.5f);
 		FCanvasTileItem TileItem(Pos, Config.CustomTexture->GetResource(), TexSize, State.Color);
-		TileItem.Rotation = FRotator(0.0f, 0.0f, State.ImpactRotationDegrees);
+		TileItem.Rotation = FRotator(0.0f, State.ImpactRotationDegrees, 0.0f);
 		TileItem.PivotPoint = FVector2D(0.5f, 0.5f);
 		TileItem.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(TileItem); 
