@@ -1,6 +1,6 @@
 # HelsincyCrosshair Plugin — User Manual
 
-> **Version**: v4.0.1
+> **Version**: v4.0.2
 > **Engine**: Unreal Engine 4.27  
 > **Author**: Helsincy Games  
 > **Audience**: Blueprint Users / C++ Users / Designers

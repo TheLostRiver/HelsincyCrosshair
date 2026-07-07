@@ -1,7 +1,7 @@
 ﻿{
 	"FileVersion": 3,
-	"Version": 401,
-	"VersionName": "4.0.1",
+	"Version": 402,
+	"VersionName": "4.0.2",
 	"FriendlyName": "Helsincy Crosshair System",
 	"Description": "Production-ready dynamic crosshair and standalone damage direction indicator plugin for FPS/TPS games. Features Canvas-based rendering, 10 built-in crosshair shapes, COD-style hit markers, 3 damage indicator styles, 170+ editable data-driven fields, recoil/spread simulation, target detection with color feedback, Blueprint/C++ support, and non-intrusive Bridge API integration.",
 	"Category": "Gameplay",

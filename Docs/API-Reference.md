@@ -1,6 +1,6 @@
 # HelsincyCrosshair Plugin — API Reference / API 参考手册
 
-> **Version / 版本**: v4.0.1
+> **Version / 版本**: v4.0.2
 > **Engine / 引擎**: UE 4.27
 > **Modules / 模块**: `HelsincyCrosshair`, `HelsincyDamageIndicator`
 
