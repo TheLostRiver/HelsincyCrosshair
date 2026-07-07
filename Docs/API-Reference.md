@@ -590,10 +590,10 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 | `KillColor` | `FLinearColor` | Red | Kill hit color. | 击杀命中颜色。 |
 | `KillScale` | `float` | 1.7 | Kill size multiplier. Range: 1–5. | 击杀大小倍率。 |
 | `bClearAllOldHitMarkerOnKill` | `bool` | true | Clear all non-kill markers when a kill marker triggers. | 触发击杀时清除所有非击杀标记。 |
-| `Thickness` | `float` | 2.0 | Line thickness (px). Range: 1–20. | 线条粗细。 |
+| `Thickness` | `float` | 1.0 | Line thickness (px). Range: 1–20. | 线条粗细。 |
 | `BaseDistance` | `float` | 8.0 | Distance from crosshair center (px). Range: 1–50. | 距准心中心距离。 |
-| `StartSize` | `float` | 16.0 | Initial line length (px). Range: 10–100. | 初始线段长度。 |
-| `EndSize` | `float` | 8.0 | Final line length (px). Range: 6–50. | 最终线段长度。 |
+| `StartSize` | `float` | 12.0 | Initial line length (px). Range: 10–100. | 初始线段长度。 |
+| `EndSize` | `float` | 6.0 | Final line length (px). Range: 6–50. | 最终线段长度。 |
 | `StartOffset` | `float` | 0.0 | Initial center offset (px). Range: 0–50. | 初始中心偏移。 |
 | `EndOffset` | `float` | 12.0 | Final center offset (px). Range: 6–50. | 最终中心偏移。 |
 | `ShakeIntensity` | `float` | 5.0 | Global shake intensity (px). Range: 0–30. | 全局震动强度。 |

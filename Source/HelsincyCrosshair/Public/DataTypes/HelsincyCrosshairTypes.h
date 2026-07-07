@@ -255,7 +255,7 @@ struct FHelsincy_HitMarkerProfile
 
 	// 线条粗细 | Line thickness
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (ClampMin = "1.0", ClampMax = "20.0", EditCondition = "bEnabled"))
-	float Thickness = 2.0f;
+	float Thickness = 1.0f;
 
 	// 基础间距：决定 HitMarker 离准星中心的距离
 	// Base distance: determines how far the hit marker is from the crosshair center.
@@ -268,11 +268,11 @@ struct FHelsincy_HitMarkerProfile
 
 	// 初始大小 (线条长度) | Start size (line length)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "10.0", ClampMax = "100.0", EditCondition = "bEnabled"))
-	float StartSize = 16.0f;
+	float StartSize = 12.0f;
 
 	// 结束大小 (线条长度) | End size (line length)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "6.0", ClampMax = "50.0", EditCondition = "bEnabled"))
-	float EndSize = 8.0f;
+	float EndSize = 6.0f;
 
 	// 初始中心偏移 (线条距离中心的距离) | Start center offset (distance from center)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "0.0", ClampMax = "50.0", EditCondition = "bEnabled"))
