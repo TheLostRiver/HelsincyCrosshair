@@ -1,5 +1,5 @@
 param(
-    [string]$Version = "4.0.1",
+    [string]$Version = "4.0.2",
     [string]$OutputDir = "Dist"
 )
 
@@ -42,6 +42,10 @@ $ExcludedFileNames = @(
     "findings.md"
 )
 
+$ExcludedRelativePaths = @(
+    (Join-Path "Docs" "superpowers")
+)
+
 $RequiredPackagePaths = @(
     "HelsincyCrosshair.uplugin",
     "Source",
@@ -67,12 +71,27 @@ Get-ChildItem -LiteralPath $Root -Force | ForEach-Object {
         return
     }
 
+    if ($_.PSIsContainer -and $_.Name -like "ue_hitmarker_frames_*") {
+        return
+    }
+
     if (-not $_.PSIsContainer -and $ExcludedFileNames -contains $_.Name) {
+        return
+    }
+
+    if (-not $_.PSIsContainer -and $_.Name -like "ue_*.png") {
         return
     }
 
     $Destination = Join-Path $StageDir $_.Name
     Copy-Item -LiteralPath $_.FullName -Destination $Destination -Recurse -Force
+}
+
+foreach ($ExcludedRelativePath in $ExcludedRelativePaths) {
+    $StagedExcludedPath = Join-Path $StageDir $ExcludedRelativePath
+    if (Test-Path $StagedExcludedPath) {
+        Remove-Item -LiteralPath $StagedExcludedPath -Recurse -Force
+    }
 }
 
 foreach ($RequiredPath in $RequiredPackagePaths) {
@@ -91,6 +110,16 @@ foreach ($ForbiddenDir in @("Binaries", "Intermediate", "Saved", "DerivedDataCac
     if (Test-Path (Join-Path $StageDir $ForbiddenDir)) {
         throw "Package validation failed: forbidden Unreal cache directory '$ForbiddenDir' was included."
     }
+}
+
+foreach ($ForbiddenRelativePath in $ExcludedRelativePaths) {
+    if (Test-Path (Join-Path $StageDir $ForbiddenRelativePath)) {
+        throw "Package validation failed: forbidden path '$ForbiddenRelativePath' was included."
+    }
+}
+
+if (Get-ChildItem -LiteralPath $StageDir -Force | Where-Object { $_.Name -like "ue_*.png" -or $_.Name -like "ue_hitmarker_frames_*" }) {
+    throw "Package validation failed: temporary UE debug captures were included."
 }
 
 if (Test-Path $ZipPath) {
