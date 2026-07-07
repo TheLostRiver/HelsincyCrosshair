@@ -33,5 +33,6 @@ namespace HelsincyCrosshairDebug
 
 	bool IsHitMarkerSoftGuardEnabled();
 	bool ShouldSkipSingleHitMarkerDraw(const APlayerController* PlayerController, EHelsincyHitMarkerDrawPath Path);
+	void RecordSingleHitMarkerDraw(const APlayerController* PlayerController, EHelsincyHitMarkerDrawPath Path);
 	FString GetSingleHitMarkerDrawGuardSummary(const APlayerController* PlayerController);
 }

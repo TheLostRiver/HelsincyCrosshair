@@ -116,11 +116,11 @@ bool HelsincyCrosshairDebug::IsHitMarkerSoftGuardEnabled()
 	return CVarHCHitMarkerSoftGuard.GetValueOnGameThread() != 0;
 }
 
-bool HelsincyCrosshairDebug::ShouldSkipSingleHitMarkerDraw(const APlayerController* PlayerController, EHelsincyHitMarkerDrawPath Path)
+void HelsincyCrosshairDebug::RecordSingleHitMarkerDraw(const APlayerController* PlayerController, EHelsincyHitMarkerDrawPath Path)
 {
 	if (!PlayerController)
 	{
-		return false;
+		return;
 	}
 
 	FHelsincySingleHitMarkerDrawRecord& Record = GSingleHitMarkerDrawRecords.FindOrAdd(PlayerController);
@@ -132,7 +132,7 @@ bool HelsincyCrosshairDebug::ShouldSkipSingleHitMarkerDraw(const APlayerControll
 		Record.FirstPathThisFrame = Path;
 		Record.LastPathThisFrame = Path;
 		Record.bDuplicateDetectedThisFrame = false;
-		return false;
+		return;
 	}
 
 	Record.LastPathThisFrame = Path;
@@ -154,8 +154,22 @@ bool HelsincyCrosshairDebug::ShouldSkipSingleHitMarkerDraw(const APlayerControll
 			IsHitMarkerSoftGuardEnabled() ? TEXT("On") : TEXT("Off"));
 #endif
 	}
+}
 
-	return IsHitMarkerSoftGuardEnabled();
+bool HelsincyCrosshairDebug::ShouldSkipSingleHitMarkerDraw(const APlayerController* PlayerController, EHelsincyHitMarkerDrawPath Path)
+{
+	if (!PlayerController || !IsHitMarkerSoftGuardEnabled())
+	{
+		return false;
+	}
+
+	const FHelsincySingleHitMarkerDrawRecord* Record = GSingleHitMarkerDrawRecords.Find(PlayerController);
+	if (!Record || Record->FrameNumber != GFrameCounter)
+	{
+		return false;
+	}
+
+	return Record->FirstPathThisFrame != Path;
 }
 
 FString HelsincyCrosshairDebug::GetSingleHitMarkerDrawGuardSummary(const APlayerController* PlayerController)

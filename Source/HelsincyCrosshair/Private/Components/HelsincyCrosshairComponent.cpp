@@ -836,9 +836,10 @@ void UHelsincyCrosshairComponent::Internal_AddOrUpdateHitMarker(FLinearColor Col
 			PulseScale = HitConfig.KillPulseScale;
 		}
 		const int32 ShakeSeed = AllocateHitMarkerShakeSeed(HitMarkerShakeSeedCounter);
+		const float DisplayDuration = FHelsincy_SingleHitMarkerState::ResolveDisplayDuration(HitConfig);
 
 		SingleHitMarkerState.ApplyHit(
-			HitConfig.Duration,
+			DisplayDuration,
 			HitConfig.Thickness,
 			Color, Priority, ScaleSize, PulseScale
 		);
@@ -1588,7 +1589,7 @@ void UHelsincyCrosshairComponent::UpdateSingleHitMarkerStateMachine(float DeltaT
 		SingleHitMarkerState.ImpactMotionEnergy,
 		0.0f,
 		DeltaTime,
-		FMath::Max(HitConfig.SingleInstanceImpactDecaySpeed, 18.0f)
+		FHelsincy_SingleHitMarkerState::ResolveImpactMotionDecaySpeed(HitConfig)
 	);
 
 	if (HitConfig.SingleInstanceAccentDuration > KINDA_SMALL_NUMBER)
@@ -1663,8 +1664,9 @@ void UHelsincyCrosshairComponent::RefreshSingleHitMarkerStateView()
 		return;
 	}
 
-	const float SafeFadeRatio = FMath::Clamp(HitConfig.SingleInstanceFadeRatio, 0.0f, 1.0f);
-	const float FadeDuration = SingleHitMarkerState.TotalDuration * SafeFadeRatio;
+	const float FadeDuration = FHelsincy_SingleHitMarkerState::ResolveFadeDuration(
+		SingleHitMarkerState.TotalDuration,
+		HitConfig.SingleInstanceFadeRatio);
 	SingleHitMarkerState.bVisible = true;
 
 	if (FadeDuration > KINDA_SMALL_NUMBER && SingleHitMarkerState.TimeRemaining <= FadeDuration)

@@ -69,6 +69,18 @@ enum class EHelsincySingleHitMarkerRenderMode : uint8
 	SpriteDualLayer UMETA(DisplayName = "Sprite Dual-Layer")
 };
 
+/**
+ * SpriteDualLayer motion algorithm.
+ * PerArmQuadrantShake is retained as a saved-asset compatible name, but it now
+ * renders four full single-arm sprites instead of slicing a complete X sprite.
+ */
+UENUM(BlueprintType)
+enum class EHelsincySingleHitMarkerSpriteMotionMode : uint8
+{
+	PerArmQuadrantShake UMETA(DisplayName = "Per-Arm Normal Shake"),
+	WholeSpriteShake    UMETA(DisplayName = "Whole Sprite Shake")
+};
+
 // 优先级枚举
 // Priority enum
 UENUM(BlueprintType)
@@ -243,7 +255,7 @@ struct FHelsincy_HitMarkerProfile
 
 	// 线条粗细 | Line thickness
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "General", meta = (ClampMin = "1.0", ClampMax = "20.0", EditCondition = "bEnabled"))
-	float Thickness = 2.0f;
+	float Thickness = 1.0f;
 
 	// 基础间距：决定 HitMarker 离准星中心的距离
 	// Base distance: determines how far the hit marker is from the crosshair center.
@@ -256,11 +268,11 @@ struct FHelsincy_HitMarkerProfile
 
 	// 初始大小 (线条长度) | Start size (line length)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "10.0", ClampMax = "100.0", EditCondition = "bEnabled"))
-	float StartSize = 16.0f;
+	float StartSize = 12.0f;
 
 	// 结束大小 (线条长度) | End size (line length)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "6.0", ClampMax = "50.0", EditCondition = "bEnabled"))
-	float EndSize = 8.0f;
+	float EndSize = 6.0f;
 
 	// 初始中心偏移 (线条距离中心的距离) | Start center offset (distance from center)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "0.0", ClampMax = "50.0", EditCondition = "bEnabled"))
@@ -389,6 +401,17 @@ struct FHelsincy_HitMarkerProfile
 		meta = (EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance"))
 	EHelsincySingleHitMarkerRenderMode SingleInstanceRenderMode = EHelsincySingleHitMarkerRenderMode::LegacyGeometry;
 
+	// Motion algorithm used only by the SpriteDualLayer backend.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance|Sprite",
+		meta = (EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance && SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer"))
+	EHelsincySingleHitMarkerSpriteMotionMode SingleInstanceSpriteMotionMode = EHelsincySingleHitMarkerSpriteMotionMode::WholeSpriteShake;
+
+	// SpriteDualLayer minimum display duration. Sprite textures read as flashes when the shared hitmarker Duration is very short.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance|Sprite",
+		meta = (ClampMin = "0.10", ClampMax = "1.00",
+				EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance && SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer"))
+	float SingleInstanceSpriteMinDisplayDuration = 0.35f;
+
 	// Optional Core sprite for the SpriteDualLayer backend.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance|Sprite",
 		meta = (EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance && SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer"))
@@ -398,6 +421,16 @@ struct FHelsincy_HitMarkerProfile
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance|Sprite",
 		meta = (EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance && SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer"))
 	UTexture2D* SingleInstanceGlowTexture = nullptr;
+
+	// Optional single-arm Core sprite used only by Per-Arm Normal Shake. The complete-X core texture is never reused as arm art.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance|Sprite|PerArm",
+		meta = (EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance && SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer && SingleInstanceSpriteMotionMode == EHelsincySingleHitMarkerSpriteMotionMode::PerArmQuadrantShake"))
+	UTexture2D* SingleInstanceArmTexture = nullptr;
+
+	// Optional single-arm Glow sprite used only by Per-Arm Normal Shake.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance|Sprite|PerArm",
+		meta = (EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance && SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer && SingleInstanceSpriteMotionMode == EHelsincySingleHitMarkerSpriteMotionMode::PerArmQuadrantShake"))
+	UTexture2D* SingleInstanceArmGlowTexture = nullptr;
 
 	// Multiplier applied to the shared sprite size derived from SingleInstanceSize and SingleInstanceOffset.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance|Sprite",
@@ -417,8 +450,8 @@ struct FHelsincy_HitMarkerProfile
 				EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance && SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer"))
 	float SingleInstanceGlowOpacityScale = 0.26f;
 
-	// 单实例模式: 淡出阶段占总时长的比例 (0.3 = 最后 30% 时间淡出)
-	// Single-instance: fade-out portion of total duration (0.3 = last 30% fades)
+	// 单实例模式: 淡出阶段占总时长的比例，并保证默认短时长下仍有可感知淡出
+	// Single-instance: fade-out portion of total duration, with a minimum perceptible fade window
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SingleInstance",
 		meta = (ClampMin = "0.1", ClampMax = "0.8",
 				EditCondition = "bEnabled && Mode == EHitMarkerMode::SingleInstance"))
@@ -505,6 +538,10 @@ struct FHelsincy_HitMarkerProfile
  */
 struct FHelsincy_SingleHitMarkerState
 {
+	static constexpr float MinimumPerceptibleFadeDuration = 0.12f;
+	static constexpr float DefaultSpriteMinDisplayDuration = 0.35f;
+	static constexpr float MinimumSpriteMinDisplayDuration = 0.10f;
+
 	// 是否激活 | Is active
 	bool bActive = false;
 
@@ -574,6 +611,45 @@ struct FHelsincy_SingleHitMarkerState
 
 	// 屏幕空间震动方向 | Screen-space shake direction
 	FVector2D ShakeDirection = FVector2D(1.0f, 0.0f);
+
+	static float ResolveFadeDuration(float InTotalDuration, float FadeRatio)
+	{
+		if (InTotalDuration <= KINDA_SMALL_NUMBER)
+		{
+			return 0.0f;
+		}
+
+		const float SafeFadeRatio = FMath::Clamp(FadeRatio, 0.0f, 1.0f);
+		const float RatioFadeDuration = InTotalDuration * SafeFadeRatio;
+		const float PerceptibleFadeDuration = FMath::Min(MinimumPerceptibleFadeDuration, InTotalDuration);
+		return FMath::Clamp(FMath::Max(RatioFadeDuration, PerceptibleFadeDuration), 0.0f, InTotalDuration);
+	}
+
+	static float ResolveDisplayDuration(const FHelsincy_HitMarkerProfile& Config)
+	{
+		const float BaseDuration = FMath::Max(Config.Duration, 0.0f);
+		if (Config.SingleInstanceRenderMode != EHelsincySingleHitMarkerRenderMode::SpriteDualLayer)
+		{
+			return BaseDuration;
+		}
+
+		return FMath::Max(BaseDuration, ResolveSpriteMinDisplayDuration(Config));
+	}
+
+	static float ResolveSpriteMinDisplayDuration(const FHelsincy_HitMarkerProfile& Config)
+	{
+		return Config.SingleInstanceSpriteMinDisplayDuration >= MinimumSpriteMinDisplayDuration
+			? Config.SingleInstanceSpriteMinDisplayDuration
+			: DefaultSpriteMinDisplayDuration;
+	}
+
+	static float ResolveImpactMotionDecaySpeed(const FHelsincy_HitMarkerProfile& Config)
+	{
+		const float BaseDecaySpeed = FMath::Max(Config.SingleInstanceImpactDecaySpeed, 0.0f);
+		return Config.SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer
+			? BaseDecaySpeed
+			: FMath::Max(BaseDecaySpeed, 18.0f);
+	}
 
 	/** 处理一次命中事件 | Process a new hit event */
 	void ApplyHit(float Duration, float InThickness, const FLinearColor& Color,
@@ -647,8 +723,7 @@ struct FHelsincy_SingleHitMarkerState
 			return;
 		}
 
-		const float SafeFadeRatio = FMath::Clamp(FadeRatio, 0.0f, 1.0f);
-		const float FadeDuration = TotalDuration * SafeFadeRatio;
+		const float FadeDuration = ResolveFadeDuration(TotalDuration, FadeRatio);
 
 		bVisible = true;
 

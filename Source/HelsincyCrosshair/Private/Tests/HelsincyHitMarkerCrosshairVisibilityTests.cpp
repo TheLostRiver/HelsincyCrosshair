@@ -130,4 +130,38 @@ bool FHelsincyHitMarkerCrosshairVisibilityNewPolicyWinsTest::RunTest(const FStri
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FHelsincySingleHitMarkerDefaultFadeIsPerceptibleTest,
+	"HelsincyCrosshair.HitMarker.SingleInstance.DefaultFadeIsPerceptible",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FHelsincySingleHitMarkerDefaultFadeIsPerceptibleTest::RunTest(const FString& Parameters)
+{
+	FHelsincy_HitMarkerProfile Config;
+	Config.Mode = EHitMarkerMode::SingleInstance;
+	Config.Duration = 0.25f;
+	Config.SingleInstanceFadeRatio = 0.3f;
+
+	FHelsincy_SingleHitMarkerState State;
+	State.ApplyHit(
+		Config.Duration,
+		Config.Thickness,
+		Config.Color,
+		EHitMarkerPriority::Low_Priority_Body,
+		1.0f,
+		Config.HitPulseScale);
+
+	State.Tick(0.15f, Config.HitPulseRecoverySpeed);
+	State.RefreshDerivedState(Config.SingleInstanceFadeRatio, Config.SingleInstanceMaxImpactEnergy);
+
+	TestTrue(
+		TEXT("Default single-instance hitmarker should be visibly fading with 0.10s remaining."),
+		State.Phase == EHelsincySingleHitMarkerPhase::TailFade);
+	TestTrue(
+		TEXT("Default single-instance fade should lower opacity before the final frame."),
+		State.Opacity > 0.0f && State.Opacity < 1.0f);
+
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

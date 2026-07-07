@@ -590,10 +590,10 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 | `KillColor` | `FLinearColor` | Red | Kill hit color. | 击杀命中颜色。 |
 | `KillScale` | `float` | 1.7 | Kill size multiplier. Range: 1–5. | 击杀大小倍率。 |
 | `bClearAllOldHitMarkerOnKill` | `bool` | true | Clear all non-kill markers when a kill marker triggers. | 触发击杀时清除所有非击杀标记。 |
-| `Thickness` | `float` | 2.0 | Line thickness (px). Range: 1–20. | 线条粗细。 |
+| `Thickness` | `float` | 1.0 | Line thickness (px). Range: 1–20. | 线条粗细。 |
 | `BaseDistance` | `float` | 8.0 | Distance from crosshair center (px). Range: 1–50. | 距准心中心距离。 |
-| `StartSize` | `float` | 16.0 | Initial line length (px). Range: 10–100. | 初始线段长度。 |
-| `EndSize` | `float` | 8.0 | Final line length (px). Range: 6–50. | 最终线段长度。 |
+| `StartSize` | `float` | 12.0 | Initial line length (px). Range: 10–100. | 初始线段长度。 |
+| `EndSize` | `float` | 6.0 | Final line length (px). Range: 6–50. | 最终线段长度。 |
 | `StartOffset` | `float` | 0.0 | Initial center offset (px). Range: 0–50. | 初始中心偏移。 |
 | `EndOffset` | `float` | 12.0 | Final center offset (px). Range: 6–50. | 最终中心偏移。 |
 | `ShakeIntensity` | `float` | 5.0 | Global shake intensity (px). Range: 0–30. | 全局震动强度。 |
@@ -618,12 +618,16 @@ Use only `HelsincyCrosshair` when consuming crosshair APIs, only `HelsincyDamage
 | `SingleInstanceSize` | `float` | 10.0 | SingleInstance fixed line size, replacing StartSize/EndSize animation. Range: 4–40. | 单实例固定线条大小，替代 StartSize/EndSize 动画。 |
 | `SingleInstanceOffset` | `float` | 8.0 | SingleInstance fixed center distance, replacing StartOffset/EndOffset animation. Range: 2–30. | 单实例固定中心距离，替代 StartOffset/EndOffset 动画。 |
 | `SingleInstanceRenderMode` | `EHelsincySingleHitMarkerRenderMode` | LegacyGeometry | SingleInstance render backend: procedural geometry or dual-layer sprites. | 单实例渲染后端：程序化几何或双层贴图。 |
+| `SingleInstanceSpriteMotionMode` | `EHelsincySingleHitMarkerSpriteMotionMode` | WholeSpriteShake | SpriteDualLayer motion preset. `WholeSpriteShake` draws complete Core/Glow textures; `PerArmQuadrantShake` draws four independent single-arm textures. | `SpriteDualLayer` 运动预设；`WholeSpriteShake` 绘制完整 Core/Glow 贴图，`PerArmQuadrantShake` 绘制四条独立单臂贴图。 |
+| `SingleInstanceSpriteMinDisplayDuration` | `float` | 0.35 | SpriteDualLayer minimum display duration. Range: 0.10–1.00. Invalid saved values below 0.10 fall back to 0.35 at runtime, preventing sprite hitmarkers from reading as a single-frame flash when `Duration` is short. | `SpriteDualLayer` 最小显示时长；旧资产保存的无效值低于 0.10 时运行时回退到 0.35，避免通用 `Duration` 较短时贴图命中标记看起来像闪一下。 |
 | `SingleInstanceCoreTexture` | `UTexture2D*` | nullptr | Optional core sprite for `SpriteDualLayer`. | `SpriteDualLayer` 的可选核心贴图。 |
 | `SingleInstanceGlowTexture` | `UTexture2D*` | nullptr | Optional glow sprite for `SpriteDualLayer`. | `SpriteDualLayer` 的可选辉光贴图。 |
+| `SingleInstanceArmTexture` | `UTexture2D*` | nullptr | Optional single-arm core sprite used by `PerArmQuadrantShake`. Complete-X Core textures are not reused as arm art. | `PerArmQuadrantShake` 使用的可选单臂核心贴图；完整 X Core 贴图不会被复用为单臂素材。 |
+| `SingleInstanceArmGlowTexture` | `UTexture2D*` | nullptr | Optional single-arm glow sprite used by `PerArmQuadrantShake`. | `PerArmQuadrantShake` 使用的可选单臂辉光贴图。 |
 | `SingleInstanceCoreScale` | `float` | 0.80 | Core sprite size multiplier. Range: 0.25–3.0. | 核心贴图尺寸倍率。 |
 | `SingleInstanceGlowScale` | `float` | 0.86 | Glow sprite size multiplier. Range: 0.25–3.0. | 辉光贴图尺寸倍率。 |
 | `SingleInstanceGlowOpacityScale` | `float` | 0.26 | Extra glow opacity multiplier. Range: 0–1. | 辉光额外透明度倍率。 |
-| `SingleInstanceFadeRatio` | `float` | 0.3 | Fraction of total duration used for tail fade. Range: 0.1–0.8. | 总时长中用于尾部淡出的比例。 |
+| `SingleInstanceFadeRatio` | `float` | 0.3 | Fraction of total duration used for tail fade. A minimum perceptible fade window is applied for short durations. Range: 0.1–0.8. | 总时长中用于尾部淡出的比例；短时长下会保留最小可感知淡出窗口。 |
 | `SingleInstanceMaxImpactEnergy` | `float` | 1.0 | Max cached impact energy for derived state. Range: 0.1–4.0. | 派生状态使用的最大命中能量。 |
 | `SingleInstanceImpactDecaySpeed` | `float` | 8.0 | Impact energy decay speed. Range: 0.1–30. | 命中能量衰减速度。 |
 | `SingleInstanceAccentDuration` | `float` | 0.08 | Duration of the hit accent phase. Range: 0.01–0.3. | 命中强调段持续时间。 |
@@ -743,6 +747,13 @@ Key fields:
 |-------|-------------------|------------|
 | `LegacyGeometry` | Legacy Geometry | 使用程序化几何绘制单实例 HitMarker。 |
 | `SpriteDualLayer` | Sprite Dual-Layer | 使用 Core + Glow 双层贴图绘制单实例 HitMarker。 |
+
+### EHelsincySingleHitMarkerSpriteMotionMode
+
+| Value | Display Name (EN) | 说明 (CN) |
+|-------|-------------------|------------|
+| `PerArmQuadrantShake` | Per-Arm Normal Shake | 兼容旧资产的单臂预设；运行时使用 `SingleInstanceArmTexture` / `SingleInstanceArmGlowTexture` 绘制四条独立单臂贴图。 |
+| `WholeSpriteShake` | Whole Sprite Shake | 整张 Core/Glow 贴图一起位移、缩放和旋转，作为稳定的完整贴图表现。 |
 
 ### EHelsincySingleHitMarkerPhase
 

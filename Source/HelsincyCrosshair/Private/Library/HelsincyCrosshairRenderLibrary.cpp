@@ -226,7 +226,7 @@ namespace HelsincyCrosshairBridge
 			const FVector2D Dir = HelsincyHitMarkerShakeMath::RotateDirection(HitMarkerDirs[i], State.ImpactRotationDegrees);
 			const FVector2D Pos = State.BasePosition + State.CalculatedGlobalOffset + (Dir * State.InnerOffset) - (TexSize * 0.5f);
 			FCanvasTileItem TileItem(Pos, Config.CustomTexture->GetResource(), TexSize, State.Color);
-			TileItem.Rotation = FRotator(0.0f, 0.0f, State.ImpactRotationDegrees);
+			TileItem.Rotation = FRotator(0.0f, State.ImpactRotationDegrees, 0.0f);
 			TileItem.PivotPoint = FVector2D(0.5f, 0.5f);
 			TileItem.BlendMode = SE_BLEND_Translucent;
 			Canvas->DrawItem(TileItem);
@@ -546,7 +546,7 @@ bool UHelsincyCrosshairRenderLibrary::DrawCrosshairForController(APlayerControll
 				&& HelsincyCrosshairDebug::ShouldSkipSingleHitMarkerDraw(PlayerController, EHelsincyHitMarkerDrawPath::Bridge);
 			if (!bSkipSingleHitMarkerDraw)
 			{
-				HelsincySingleHitMarkerRenderCore::DrawSingleHitMarker(
+				const bool bDrewSingleHitMarker = HelsincySingleHitMarkerRenderCore::DrawSingleHitMarker(
 					Canvas,
 					Profile,
 					SingleHitMarkerState,
@@ -554,6 +554,10 @@ bool UHelsincyCrosshairRenderLibrary::DrawCrosshairForController(APlayerControll
 					Scale,
 					Subsystem
 				);
+				if (bDrewSingleHitMarker)
+				{
+					HelsincyCrosshairDebug::RecordSingleHitMarkerDraw(PlayerController, EHelsincyHitMarkerDrawPath::Bridge);
+				}
 			}
 		}
 		else

@@ -28,6 +28,14 @@ namespace HelsincySingleHitMarkerRenderCore
 		float ImpactMotionAlpha = 0.0f;
 	};
 
+	struct FSingleHitMarkerSpriteDrawSpec
+	{
+		FVector2D Center = FVector2D::ZeroVector;
+		FVector2D Size = FVector2D::ZeroVector;
+		float RotationDegrees = 0.0f;
+		int32 ArmIndex = INDEX_NONE;
+	};
+
 	struct FHitMarkerCrosshairVisibilityResult
 	{
 		bool bHitMarkerAffectsCrosshair = false;
@@ -61,6 +69,11 @@ namespace HelsincySingleHitMarkerRenderCore
 			FVector2D(-Diag, Diag), FVector2D(Diag, Diag)
 		};
 		return Directions;
+	}
+
+	inline FRotator MakeCanvasTileRotation(float RotationDegrees)
+	{
+		return FRotator(0.0f, RotationDegrees, 0.0f);
 	}
 
 	inline FTexture* ResolveSmoothHitMarkerTexture(const FHelsincy_HitMarkerProfile& Config, UHelsincyCrosshairManagerSubsystem* Subsystem)
@@ -218,7 +231,7 @@ namespace HelsincySingleHitMarkerRenderCore
 			const FVector2D Dir = ResolveImpactDirection(Directions[i], State);
 			const FVector2D Pos = State.BasePosition + State.CalculatedGlobalOffset + (Dir * State.InnerOffset) - (TexSize * 0.5f);
 			FCanvasTileItem TileItem(Pos, Config.CustomTexture->GetResource(), TexSize, State.Color);
-			TileItem.Rotation = FRotator(0.0f, 0.0f, State.ImpactRotationDegrees);
+			TileItem.Rotation = MakeCanvasTileRotation(State.ImpactRotationDegrees);
 			TileItem.PivotPoint = FVector2D(0.5f, 0.5f);
 			TileItem.BlendMode = SE_BLEND_Translucent;
 			Canvas->DrawItem(TileItem);
@@ -304,9 +317,14 @@ namespace HelsincySingleHitMarkerRenderCore
 		DrawPass(1.0f, 1.0f, SE_BLEND_Translucent);
 	}
 
-	inline void DrawResolvedHitMarker(UCanvas* Canvas, const FHelsincy_HitMarkerProfile& Config, const FSharedHitMarkerRenderState& State, FTexture* SmoothTexResource)
+	inline bool ShouldAllowCustomTextureFallbackForSingleInstance(const FHelsincy_HitMarkerProfile& Config)
 	{
-		if (Config.CustomTexture)
+		return Config.SingleInstanceRenderMode != EHelsincySingleHitMarkerRenderMode::SpriteDualLayer;
+	}
+
+	inline void DrawResolvedHitMarker(UCanvas* Canvas, const FHelsincy_HitMarkerProfile& Config, const FSharedHitMarkerRenderState& State, FTexture* SmoothTexResource, bool bAllowCustomTexture = true)
+	{
+		if (bAllowCustomTexture && Config.CustomTexture)
 		{
 			DrawHitMarkerImage(Canvas, Config, State);
 		}
@@ -384,7 +402,8 @@ namespace HelsincySingleHitMarkerRenderCore
 
 	inline FVector2D CalculateSingleHitMarkerSpriteCenter(const FSharedHitMarkerRenderState& State)
 	{
-		return State.BasePosition + State.CalculatedGlobalOffset;
+		return State.BasePosition
+			+ State.CalculatedGlobalOffset;
 	}
 
 	inline float CalculateSingleHitMarkerSpriteSize(const FSharedHitMarkerRenderState& State, float ScaleMultiplier)
@@ -393,20 +412,97 @@ namespace HelsincySingleHitMarkerRenderCore
 		return FMath::Max(BaseDiameter * ScaleMultiplier, 1.0f);
 	}
 
-	inline void DrawSingleHitMarkerSpriteLayer(UCanvas* Canvas, UTexture2D* Texture, FVector2D Center, float Size, const FLinearColor& Color, float RotationDegrees)
+	inline FSingleHitMarkerSpriteDrawSpec CalculateSingleHitMarkerWholeSpriteSpec(const FSharedHitMarkerRenderState& State, float ScaleMultiplier)
+	{
+		const float Size = CalculateSingleHitMarkerSpriteSize(State, ScaleMultiplier);
+		FSingleHitMarkerSpriteDrawSpec Spec;
+		Spec.Center = CalculateSingleHitMarkerSpriteCenter(State);
+		Spec.Size = FVector2D(Size, Size);
+		Spec.RotationDegrees = State.ImpactRotationDegrees;
+		return Spec;
+	}
+
+	inline FVector2D ResolveSingleHitMarkerTextureSize(const UTexture2D* Texture)
+	{
+		if (!Texture)
+		{
+			return FVector2D(1.0f, 1.0f);
+		}
+
+		return FVector2D(
+			FMath::Max(static_cast<float>(Texture->GetSurfaceWidth()), 1.0f),
+			FMath::Max(static_cast<float>(Texture->GetSurfaceHeight()), 1.0f));
+	}
+
+	inline void CalculateSingleHitMarkerPerArmSpriteSpecs(
+		const FSharedHitMarkerRenderState& State,
+		const FVector2D& SourceTextureSize,
+		float ScaleMultiplier,
+		TArray<FSingleHitMarkerSpriteDrawSpec>& OutSpecs)
+	{
+		OutSpecs.Reset();
+
+		const float SafeSourceWidth = FMath::Max(SourceTextureSize.X, 1.0f);
+		const float SafeAspectRatio = FMath::Max(SourceTextureSize.Y, 1.0f) / SafeSourceWidth;
+		const float ArmLength = FMath::Max(State.Length * ScaleMultiplier, 1.0f);
+		const FVector2D DrawSize(ArmLength, FMath::Max(ArmLength * SafeAspectRatio, 1.0f));
+		const FVector2D* Directions = GetHitMarkerDirections();
+
+		for (int32 ArmIndex = 0; ArmIndex < 4; ++ArmIndex)
+		{
+			const FVector2D Dir = ResolveImpactDirection(Directions[ArmIndex], State);
+			const FVector2D RightDir(Dir.Y, -Dir.X);
+
+			FVector2D ArmOrigin = CalculateSingleHitMarkerSpriteCenter(State);
+			if (State.CurrentNormalShakeIntensity > 0.1f)
+			{
+				ArmOrigin += RightDir * (State.NormalShakeValues[ArmIndex] * State.CurrentNormalShakeIntensity);
+			}
+
+			const FVector2D InnerBase = ArmOrigin + (Dir * State.InnerOffset);
+
+			FSingleHitMarkerSpriteDrawSpec Spec;
+			Spec.Center = InnerBase + (Dir * (ArmLength * 0.5f));
+			Spec.Size = DrawSize;
+			Spec.RotationDegrees = FMath::RadiansToDegrees(FMath::Atan2(Dir.Y, Dir.X));
+			Spec.ArmIndex = ArmIndex;
+			OutSpecs.Add(Spec);
+		}
+	}
+
+	inline void DrawSingleHitMarkerSpriteLayer(UCanvas* Canvas, UTexture2D* Texture, const FSingleHitMarkerSpriteDrawSpec& Spec, const FLinearColor& Color)
 	{
 		if (!Canvas || !Texture || !Texture->GetResource())
 		{
 			return;
 		}
 
-		const FVector2D SpriteSize(Size, Size);
-		const FVector2D Position = Center - (SpriteSize * 0.5f);
-		FCanvasTileItem TileItem(Position, Texture->GetResource(), SpriteSize, Color);
-		TileItem.Rotation = FRotator(0.0f, 0.0f, RotationDegrees);
+		const FVector2D Position = Spec.Center - (Spec.Size * 0.5f);
+		FCanvasTileItem TileItem(Position, Texture->GetResource(), Spec.Size, Color);
+		TileItem.Rotation = MakeCanvasTileRotation(Spec.RotationDegrees);
 		TileItem.PivotPoint = FVector2D(0.5f, 0.5f);
 		TileItem.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(TileItem);
+	}
+
+	inline void DrawSingleHitMarkerPerArmSpriteLayer(UCanvas* Canvas, UTexture2D* Texture, const FSharedHitMarkerRenderState& State, float ScaleMultiplier, const FLinearColor& Color)
+	{
+		if (!Canvas || !Texture || !Texture->GetResource())
+		{
+			return;
+		}
+
+		TArray<FSingleHitMarkerSpriteDrawSpec> ArmSpecs;
+		CalculateSingleHitMarkerPerArmSpriteSpecs(
+			State,
+			ResolveSingleHitMarkerTextureSize(Texture),
+			ScaleMultiplier,
+			ArmSpecs);
+
+		for (const FSingleHitMarkerSpriteDrawSpec& Spec : ArmSpecs)
+		{
+			DrawSingleHitMarkerSpriteLayer(Canvas, Texture, Spec, Color);
+		}
 	}
 
 	inline bool DrawSingleHitMarkerSprite(UCanvas* Canvas, const FHelsincy_HitMarkerProfile& Config, const FSharedHitMarkerRenderState& State)
@@ -419,18 +515,35 @@ namespace HelsincySingleHitMarkerRenderCore
 			return false;
 		}
 
-		const FVector2D SpriteCenter = CalculateSingleHitMarkerSpriteCenter(State);
-		const float CoreSize = CalculateSingleHitMarkerSpriteSize(State, Config.SingleInstanceCoreScale);
-		const float GlowSize = CalculateSingleHitMarkerSpriteSize(State, Config.SingleInstanceGlowScale);
+		if (ResolvedAssets.bUsePerArmSprites)
+		{
+			if (ResolvedAssets.Mode == HelsincySingleHitMarkerSpriteSupport::EResolvedSingleHitMarkerSpriteMode::SpriteDualLayer)
+			{
+				FLinearColor GlowColor = State.Color;
+				GlowColor.A *= Config.SingleInstanceGlowOpacityScale;
+				DrawSingleHitMarkerPerArmSpriteLayer(Canvas, ResolvedAssets.GlowTexture, State, Config.SingleInstanceGlowScale, GlowColor);
+			}
+
+			DrawSingleHitMarkerPerArmSpriteLayer(Canvas, ResolvedAssets.CoreTexture, State, Config.SingleInstanceCoreScale, State.Color);
+			return true;
+		}
 
 		if (ResolvedAssets.Mode == HelsincySingleHitMarkerSpriteSupport::EResolvedSingleHitMarkerSpriteMode::SpriteDualLayer)
 		{
 			FLinearColor GlowColor = State.Color;
 			GlowColor.A *= Config.SingleInstanceGlowOpacityScale;
-			DrawSingleHitMarkerSpriteLayer(Canvas, ResolvedAssets.GlowTexture, SpriteCenter, GlowSize, GlowColor, State.ImpactRotationDegrees);
+			DrawSingleHitMarkerSpriteLayer(
+				Canvas,
+				ResolvedAssets.GlowTexture,
+				CalculateSingleHitMarkerWholeSpriteSpec(State, Config.SingleInstanceGlowScale),
+				GlowColor);
 		}
 
-		DrawSingleHitMarkerSpriteLayer(Canvas, ResolvedAssets.CoreTexture, SpriteCenter, CoreSize, State.Color, State.ImpactRotationDegrees);
+		DrawSingleHitMarkerSpriteLayer(
+			Canvas,
+			ResolvedAssets.CoreTexture,
+			CalculateSingleHitMarkerWholeSpriteSpec(State, Config.SingleInstanceCoreScale),
+			State.Color);
 		return true;
 	}
 
@@ -445,6 +558,7 @@ namespace HelsincySingleHitMarkerRenderCore
 		const float SafeSpacingScale = Config.bUseSingleInstanceVisualSeparation
 			? FMath::Max(Config.SingleInstanceSafeSpacingScale, 1.0f)
 			: 1.0f;
+		const bool bUseSpriteDualLayer = Config.SingleInstanceRenderMode == EHelsincySingleHitMarkerRenderMode::SpriteDualLayer;
 
 		OutState.BasePosition = Center;
 		OutState.Scale = Scale;
@@ -468,10 +582,11 @@ namespace HelsincySingleHitMarkerRenderCore
 		}
 		else
 		{
+			const float SpriteShakeWeight = bUseSpriteDualLayer ? 0.35f : 1.0f;
 			OutState.CalculatedGlobalOffset = HelsincyHitMarkerShakeMath::ResolveDampedShakeOffset(
 				MarkerState.ShakeDirection,
 				MarkerState.ShakeAge,
-				Config.ShakeIntensity * Scale * ShakeStrength,
+				Config.ShakeIntensity * Scale * ShakeStrength * SpriteShakeWeight,
 				Config.ShakeFrequency,
 				Config.ShakeDamping,
 				MarkerState.ShakePhase);
@@ -480,7 +595,7 @@ namespace HelsincySingleHitMarkerRenderCore
 			OutState.ImpactArmLengthMultiplier = 1.0f;
 			OutState.ImpactMotionAlpha = 0.0f;
 		}
-		const float NormalShakeWeight = Config.bUseImpactMotion ? 0.35f : 1.0f;
+		const float NormalShakeWeight = Config.bUseImpactMotion || bUseSpriteDualLayer ? 0.35f : 1.0f;
 		OutState.CurrentNormalShakeIntensity = Config.NormalShakeIntensity * Scale * ShakeStrength * NormalShakeWeight;
 		HelsincyHitMarkerShakeMath::ResolveNormalShakeValues(
 			MarkerState.ShakeSeed,
@@ -512,19 +627,25 @@ namespace HelsincySingleHitMarkerRenderCore
 		}
 	}
 
-	inline void DrawSingleHitMarker(UCanvas* Canvas, const FHelsincyCrosshairProfile& Profile, const FHelsincy_SingleHitMarkerState& MarkerState, FVector2D Center, float Scale, UHelsincyCrosshairManagerSubsystem* Subsystem)
+	inline bool DrawSingleHitMarker(UCanvas* Canvas, const FHelsincyCrosshairProfile& Profile, const FHelsincy_SingleHitMarkerState& MarkerState, FVector2D Center, float Scale, UHelsincyCrosshairManagerSubsystem* Subsystem)
 	{
 		const FHelsincy_HitMarkerProfile& Config = Profile.HitMarkerConfig;
 		if (!Canvas || !Config.bEnabled || !MarkerState.bVisible)
 		{
-			return;
+			return false;
 		}
 
 		FSharedHitMarkerRenderState RenderState;
 		CalculateSingleHitMarkerState(Config, MarkerState, Center, Scale, RenderState);
 		if (!DrawSingleHitMarkerSprite(Canvas, Config, RenderState))
 		{
-			DrawResolvedHitMarker(Canvas, Config, RenderState, ResolveSmoothHitMarkerTexture(Config, Subsystem));
+			DrawResolvedHitMarker(
+				Canvas,
+				Config,
+				RenderState,
+				ResolveSmoothHitMarkerTexture(Config, Subsystem),
+				ShouldAllowCustomTextureFallbackForSingleInstance(Config));
 		}
+		return true;
 	}
 }
